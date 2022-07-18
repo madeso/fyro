@@ -241,7 +241,7 @@ struct Minesweeper
 	}
 };
 
-struct MinesweeperGame : public Game
+struct MinesweeperGame : public State
 {
 	render::Texture onebit;
 	glm::vec2 mouse;
@@ -271,11 +271,10 @@ struct MinesweeperGame : public Game
 	}
 
 	float title_anim = 0.0f;
-	bool on_update(float dt) override
+	void on_update(float dt) override
 	{
 		title_anim += dt * 1.0f;
 		while(title_anim > 1.0f) { title_anim -= 1.0f;}
-		return true;
 	}
 
 	void
@@ -348,7 +347,9 @@ main(int, char**)
 	(
 		"minesweeper", glm::ivec2{800, 600}, false, []()
 		{
-			return std::make_shared<MinesweeperGame>();
+			auto game = std::make_shared<Game>();
+			game->state = std::make_shared<MinesweeperGame>();
+			return game;
 		}
 	);
 }

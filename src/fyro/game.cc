@@ -25,13 +25,13 @@
 #include "fyro/windows.sdl.convert.h"
 
 
-void Game::on_render(const render::RenderCommand&) {}
-void Game::on_imgui() {}
-bool Game::on_update(float) { return true; }
-void Game::on_key(char, bool) {}
-void Game::on_mouse_position(const render::InputCommand&, const glm::ivec2&) {}
-void Game::on_mouse_button(const render::InputCommand&, input::MouseButton, bool) {}
-void Game::on_mouse_wheel(int) {}
+void State::on_render(const render::RenderCommand&) {}
+void State::on_imgui() {}
+void State::on_update(float) { }
+void State::on_key(char, bool) {}
+void State::on_mouse_position(const render::InputCommand&, const glm::ivec2&) {}
+void State::on_mouse_button(const render::InputCommand&, input::MouseButton, bool) {}
+void State::on_mouse_wheel(int) {}
 
 namespace
 {
@@ -153,7 +153,7 @@ struct Window
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		game->on_render({states, render_data.get(), size});
+		game->state->on_render({states, render_data.get(), size});
 
 		if(imgui)
 		{
@@ -161,7 +161,7 @@ struct Window
 			ImGui_ImplSDL2_NewFrame(sdl_window);
 			ImGui::NewFrame();
 
-			game->on_imgui();
+			game->state->on_imgui();
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -207,7 +207,7 @@ void pump_events(Window* window)
 				const auto key = e.key.keysym.sym;
 				if(key >= SDLK_BACKSPACE && key <= SDLK_DELETE)
 				{
-					window->game->on_key(static_cast<char>(key), e.type == SDL_KEYDOWN);
+					window->game->state->on_key(static_cast<char>(key), e.type == SDL_KEYDOWN);
 				}
 			}
 			break;
@@ -215,7 +215,7 @@ void pump_events(Window* window)
 		case SDL_MOUSEMOTION:
 			if(handle_mouse)
 			{
-				window->game->on_mouse_position({window->size}, glm::ivec2{e.motion.x, window->size.y - e.motion.y});
+				window->game->state->on_mouse_position({window->size}, glm::ivec2{e.motion.x, window->size.y - e.motion.y});
 			}
 			break;
 
@@ -223,7 +223,7 @@ void pump_events(Window* window)
 		case SDL_MOUSEBUTTONUP:
 			if(handle_mouse)
 			{
-				window->game->on_mouse_button({window->size}, sdl::to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN);
+				window->game->state->on_mouse_button({window->size}, sdl::to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN);
 			}
 			break;
 
@@ -233,7 +233,7 @@ void pump_events(Window* window)
 				if(e.wheel.y != 0)
 				{
 					const auto direction = e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
-					window->game->on_mouse_wheel(e.wheel.y * direction);
+					window->game->state->on_mouse_wheel(e.wheel.y * direction);
 				}
 			}
 			break;
@@ -275,7 +275,8 @@ int setup_and_run(std::function<std::shared_ptr<Game>()> make_game, const std::s
 		last = now;
 
 		pump_events(&window);
-		if(false == window.game->on_update(dt))
+		window.game->state->on_update(dt);
+		if(window.game->run == false)
 		{
 			return 0;
 		}

@@ -43,8 +43,8 @@ struct Label
 {
 	Label(const std::string& iText, float iX, float iY)
 		: text(iText)
-		  , x(iX)
-		  , y(iY)
+		, x(iX)
+		, y(iY)
 	{
 	}
 
@@ -63,9 +63,9 @@ struct Button
 {
 	Button(const std::string& iText, float iX, float iY)
 		: text(iText)
-		  , x(iX)
-		  , y(iY)
-		  , over(false)
+		, x(iX)
+		, y(iY)
+		, over(false)
 	{
 	}
 
@@ -96,16 +96,16 @@ struct Menu
 {
 	Menu()
 		: state(0)
-		  , mouse_was_down(false)
-		  , hardAi("human versus hard ai", 250, 200)
-		  , easyAi("human versus easy ai", 250, 250)
-		  , noAi("human versus human", 250, 300)
-		  , aiLabel("select gameplay:", 200, 100)
-		  , allRules("use all rules", 150, 350)
-		  , allRulesDesc(" - only for 4d masters", 200, 400)
-		  , mostRules("use most rules", 150, 200)
-		  , mostRulesDesc(" ignores most trans-square rules\n - recommended for beginners", 200, 250)
-		  , rulesLabel("select how many rules you want to use", 100, 100)
+		, mouse_was_down(false)
+		, hardAi("human versus hard ai", 250, 200)
+		, easyAi("human versus easy ai", 250, 250)
+		, noAi("human versus human", 250, 300)
+		, aiLabel("select gameplay:", 200, 100)
+		, allRules("use all rules", 150, 350)
+		, allRulesDesc(" - only for 4d masters", 200, 400)
+		, mostRules("use most rules", 150, 200)
+		, mostRulesDesc(" ignores most trans-square rules\n - recommended for beginners", 200, 250)
+		, rulesLabel("select how many rules you want to use", 100, 100)
 	{
 	}
 
@@ -257,7 +257,7 @@ struct FadeFromBlack : FullscreenColorSprite
 {
 	FadeFromBlack(float iTime)
 		: FullscreenColorSprite({0, 0, 0, 1})
-		  , time(iTime)
+		, time(iTime)
 	{
 	}
 
@@ -972,11 +972,11 @@ struct OldGame
 	SuggestedLocation suggested_location;
 	OldGame()
 		: quit(false)
-		  , is_quiting(false)
-		  , has_result(false)
-		  , combo(nullptr)
-		  , is_interactive(true)
-		  , ai_has_moved(false)
+		, is_quiting(false)
+		, has_result(false)
+		, combo(nullptr)
+		, is_interactive(true)
+		, ai_has_moved(false)
 	{
 		add(std::make_shared<FullscreenColorSprite>(glm::vec4{0.8f, 0.8f, 0.8f, 1.0f}));
 		for (int i = 0; i < 4; ++i)
@@ -1458,7 +1458,7 @@ struct StartNewGameFader : FullscreenColorSprite
 {
 	StartNewGameFader()
 		: FullscreenColorSprite({0, 0, 0, 0})
-		  , direction(1)
+		, direction(1)
 	{
 	}
 
@@ -1488,7 +1488,7 @@ void AddStartNewGameFader(OldGame& iGame)
 
 enum struct GameState { game, menu };
 
-struct GameWrapper : Game
+struct GameWrapper : State
 {
 	render::Texture onebit;
 	glm::vec2 mouse;
@@ -1518,12 +1518,15 @@ struct GameWrapper : Game
 		game.buildRules(gd);
 	}
 
-	GameWrapper()
+	Game* root_game;
+
+	GameWrapper(Game* gg)
 		: onebit
-		  (
-			  onebit::load_texture()
-		  )
-		  , mouse(0, 0)
+		(
+			onebit::load_texture()
+		)
+		, mouse(0, 0)
+		, root_game(gg)
 	{
 		gGame = &game;
 		menu.on_start_game = [this]()
@@ -1532,15 +1535,14 @@ struct GameWrapper : Game
 		};
 	}
 
-	bool
+	void
 	on_update(float dt) override
 	{
-		bool r = true;
 		switch (state)
 		{
 		case GameState::game:
 			game.update(gd, &random, mouse_button, old_mouse_button, dt, mouse, enter_state);
-			r = !game.quit;
+			root_game->run = !game.quit;
 			break;
 		case GameState::menu:
 			menu.update(&gd, mouse, mouse_button, dt);
@@ -1551,7 +1553,6 @@ struct GameWrapper : Game
 		}
 
 		old_mouse_button = mouse_button;
-		return r;
 	}
 
 	constexpr static auto layout = render::LayoutData{render::ViewportStyle::black_bars, width, height};
@@ -1590,7 +1591,9 @@ main(int, char**)
 	(
 		"4th Dimension", glm::ivec2{800, 600}, false, []()
 		{
-			return std::make_shared<GameWrapper>();
+			auto game = std::make_shared<Game>();
+			game->state = std::make_shared<GameWrapper>(game.get());
+			return game;
 		}
 	);
 }

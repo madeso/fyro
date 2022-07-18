@@ -77,7 +77,7 @@ struct ColorFlips
 	}
 };
 
-struct ExampleGame : public Game
+struct ExampleGame : public State
 {
 	render::Texture cards;
 	render::Texture letter_g;
@@ -103,11 +103,10 @@ struct ExampleGame : public Game
 	{
 	}
 
-	bool
+	void
 	on_update(float dt) override
 	{
 		flips.update(dt);
-		return true;
 	}
 
 	void
@@ -143,7 +142,9 @@ main(int, char**)
 	(
 		"Example", glm::ivec2{800, 600}, false, []()
 		{
-			return std::make_shared<ExampleGame>();
+			auto game = std::make_shared<Game>();
+			game->state = std::make_shared<ExampleGame>();
+			return game;
 		}
 	);
 }
