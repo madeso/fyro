@@ -5,10 +5,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mo
 
 add_library(edit_and_continue INTERFACE)
 if(MSVC)
-    # ZI = add debug information with edit and continue support to the target
-    # Zi = same with edit and continue disabled
-    target_compile_options(edit_and_continue INTERFACE "/ZI")
-    target_link_options(edit_and_continue INTERFACE "/INCREMENTAL")
+	# ZI = add debug information with edit and continue support to the target
+	# Zi = same with edit and continue disabled
+	target_compile_options(edit_and_continue INTERFACE "/ZI")
+	target_link_options(edit_and_continue INTERFACE "/INCREMENTAL")
 endif()
 
 include(cmake/StandardProjectSettings.cmake)

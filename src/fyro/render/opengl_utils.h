@@ -5,13 +5,13 @@ namespace render
 
 struct OpenglStates
 {
-    std::optional<bool> cull_face;
-    std::optional<bool> blending;
-    std::optional<bool> depth_test;
+	std::optional<bool> cull_face;
+	std::optional<bool> blending;
+	std::optional<bool> depth_test;
 
-    OpenglStates& with_cull_face(bool t);
-    OpenglStates& with_blending(bool t);
-    OpenglStates& with_depth_test(bool t);
+	OpenglStates& with_cull_face(bool t);
+	OpenglStates& with_blending(bool t);
+	OpenglStates& with_depth_test(bool t);
 };
 
 

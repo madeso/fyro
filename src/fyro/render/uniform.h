@@ -7,20 +7,20 @@ namespace render
  */
 struct Uniform
 {
-    std::string name;
-    int location;
-    unsigned int debug_shader_program;
-    int texture = -1; // >=0 if this is uniform maps to a texture
+	std::string name;
+	int location;
+	unsigned int debug_shader_program;
+	int texture = -1; // >=0 if this is uniform maps to a texture
 
-    /// Creates a invalid uniform
-    Uniform();
+	/// Creates a invalid uniform
+	Uniform();
 
-    Uniform(const std::string& n, int l, unsigned int sp);
+	Uniform(const std::string& n, int l, unsigned int sp);
 
-    operator bool() const;
+	operator bool() const;
 
-    bool
-    is_valid() const;
+	bool
+	is_valid() const;
 };
 
 }

@@ -7,10 +7,10 @@ namespace render
 
 struct ViewportDef
 {
-    Recti screen_rect;
+	Recti screen_rect;
 
-    float virtual_width;
-    float virtual_height;
+	float virtual_width;
+	float virtual_height;
 };
 
 
@@ -21,10 +21,10 @@ struct ViewportDef
 ViewportDef
 fit_with_black_bars
 (
-    float width,
-    float height,
-    int window_width,
-    int window_height
+	float width,
+	float height,
+	int window_width,
+	int window_height
 );
 
 
