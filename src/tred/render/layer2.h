@@ -42,13 +42,6 @@ struct LayoutData
     float requested_height;
 };
 
-struct LerpData
-{
-    LayoutData lhs;
-    LayoutData rhs;
-    float t;
-};
-
 
 struct InputCommand
 {
@@ -63,7 +56,6 @@ struct RenderCommand
 
     // tood(Gustav): add clear to color function
     void clear(const glm::vec3& color, const LayoutData& ld) const;
-    void clear(const glm::vec3& color, const LerpData& ld) const;
 };
 
 
@@ -77,9 +69,5 @@ struct RenderCommand
 RenderLayer2 with_layer2(const RenderCommand& rc, const LayoutData& ld);
 RenderLayer3 with_layer3(const RenderCommand& rc, const LayoutData& ld);
 Layer with_layer(const InputCommand& rc, const LayoutData& ld);
-
-RenderLayer2 with_layer2(const RenderCommand& rc, const LerpData& ld);
-RenderLayer3 with_layer3(const RenderCommand& rc, const LerpData& ld);
-Layer with_layer(const InputCommand& rc, const LerpData& ld);
 
 }

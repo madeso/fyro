@@ -85,50 +85,10 @@ ViewportDef create_viewport(const LayoutData& ld, const glm::ivec2& size)
 }
 
 
-ViewportDef create_viewport(const LerpData& ld, const glm::ivec2& size)
-{
-    return lerp
-    (
-        create_viewport(ld.lhs, size),
-        ld.t,
-        create_viewport(ld.rhs, size)
-    );
-}
-
-
 void
 RenderCommand::clear(const glm::vec3& color, const LayoutData& ld) const
 {
     if(ld.style == ViewportStyle::extended)
-    {
-        glClearColor(color.r, color.g, color.b, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
-    else
-    {
-        auto l = with_layer2(*this, ld);
-        l.batch->quad({}, l.viewport_aabb_in_worldspace, {}, glm::vec4{color, 1.0f});
-    }
-}
-
-
-bool
-is_fullscreen(const LerpData& ld)
-{
-    if(ld.lhs.style == ld.rhs.style || (ld.t <= 0.0f || ld.t >= 1.0f))
-    {
-        const auto style = ld.t >= 1.0f ? ld.rhs.style : ld.lhs.style;
-        return style == ViewportStyle::extended;
-    }
-
-    return false;
-}
-
-
-void
-RenderCommand::clear(const glm::vec3& color, const LerpData& ld) const
-{
-    if(is_fullscreen(ld))
     {
         glClearColor(color.r, color.g, color.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -161,28 +121,5 @@ Layer with_layer(const InputCommand& rc, const LayoutData& ld)
     return create_layer(vp);
 }
 
-
-
-
-
-RenderLayer2 with_layer2(const RenderCommand& rc, const LerpData& ld)
-{
-    const auto vp = create_viewport(ld, rc.size);
-    return create_layer2(rc, vp);
-}
-
-
-RenderLayer3 with_layer3(const RenderCommand& rc, const LerpData& ld)
-{
-    const auto vp = create_viewport(ld, rc.size);
-    return create_layer3(rc, vp);
-}
-
-
-Layer with_layer(const InputCommand& rc, const LerpData& ld)
-{
-    const auto vp = create_viewport(ld, rc.size);
-    return create_layer(vp);
-}
 
 }

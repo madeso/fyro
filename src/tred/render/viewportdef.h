@@ -36,13 +36,4 @@ ViewportDef
 extended_viewport(float width, float height, int window_width, int window_height);
 
 
-[[nodiscard]]
-ViewportDef
-lerp
-(
-    const ViewportDef& lhs,
-    float t,
-    const ViewportDef& rhs
-);
-
 }

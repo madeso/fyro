@@ -16,6 +16,3 @@
 [submodule "tools/buildtools"]
 	path = tools/buildtools
 	url = git@github.com:madeso/build
-[submodule "external/mustache/mustache"]
-	path = external/mustache/mustache
-	url = git@github.com:madeso/Mustache.git
