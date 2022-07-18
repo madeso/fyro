@@ -22,3 +22,6 @@ Fyrö also means lightouse island but that's not related but it could be the bas
 * extend api to something similar to flixel
 * add hot reload
 * port to webgl, android, raspberry pi
+* port gamejam games for more samples
+* port "16 games in c++ sfml" for more samples?
+
