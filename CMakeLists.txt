@@ -25,9 +25,9 @@ set_project_warnings(project_warnings)
 enable_sanitizers(project_options)
 
 add_subdirectory(external)
-add_subdirectory(data/sprites)
+# add_subdirectory(data/sprites)
 add_subdirectory(src)
-add_subdirectory(examples)
+# add_subdirectory(examples)
 
 add_library(sprites INTERFACE)
 target_include_directories(sprites INTERFACE data)

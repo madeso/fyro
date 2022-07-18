@@ -29,6 +29,8 @@ set(src_base
 	fyro/rect.cc fyro/rect.h
 	fyro/types.cc fyro/types.h
 	fyro/windows.sdl.convert.cc fyro/windows.sdl.convert.h
+
+	fyro/main.cc
 )
 
 set(src_pch
@@ -43,7 +45,7 @@ set(src
 	${src_pch}
 )
 
-add_library(fyro STATIC ${src})
+add_executable(fyro ${src})
 target_link_libraries(fyro
 	PUBLIC
 		sdl2
@@ -74,12 +76,12 @@ source_group("base" FILES ${src_base})
 source_group("pch" FILES ${src_pch})
 
 
-set(src_test
-	fyro/render/vertex_layout.test.cc
-	../external/catch/main.cc
-)
-add_executable(test ${src_test})
-target_link_libraries(test
-	PUBLIC catch fyro catchy
-	PRIVATE project_options project_warnings
-)
+# set(src_test
+# 	fyro/render/vertex_layout.test.cc
+# 	../external/catch/main.cc
+# )
+# add_executable(test ${src_test})
+# target_link_libraries(test
+# 	PUBLIC catch fyro catchy
+# 	PRIVATE project_options project_warnings
+# )
