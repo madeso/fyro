@@ -1,9 +1,9 @@
 #include "sprites/onebit_font.h"
 
-#include "tred/assert.h"
+#include "fyro/assert.h"
 
-#include "tred/render/texture.h"
-#include "tred/game.h"
+#include "fyro/render/texture.h"
+#include "fyro/game.h"
 
 #include "sprites/onebit.h"
 

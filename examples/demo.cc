@@ -1,8 +1,8 @@
-#include "tred/fyro.h"
+#include "fyro/fyro.h"
 
 #include <array>
 
-#include "tred/random.h"
+#include "fyro/random.h"
 
 #include "letter_g.png.h"
 #include "sprites/cards.h"

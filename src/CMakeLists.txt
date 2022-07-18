@@ -2,37 +2,37 @@ set(src_empty
 )
 
 set(src_input
-    tred/input/key.cc tred/input/key.h
-    tred/input/axis.cc tred/input/axis.h
+    fyro/input/key.cc fyro/input/key.h
+    fyro/input/axis.cc fyro/input/axis.h
 )
 
 set(src_render
-    tred/render/layer2.cc tred/render/layer2.h
-    tred/render/opengl_utils.cc tred/render/opengl_utils.h
-    tred/render/render2.cc tred/render/render2.h
-    tred/render/shader.cc tred/render/shader.h
-    tred/render/texture.cc tred/render/texture.h
-    tred/render/uniform.cc tred/render/uniform.h
-    tred/render/vertex_layout.cc tred/render/vertex_layout.h
-    tred/render/viewportdef.cc tred/render/viewportdef.h
+    fyro/render/layer2.cc fyro/render/layer2.h
+    fyro/render/opengl_utils.cc fyro/render/opengl_utils.h
+    fyro/render/render2.cc fyro/render/render2.h
+    fyro/render/shader.cc fyro/render/shader.h
+    fyro/render/texture.cc fyro/render/texture.h
+    fyro/render/uniform.cc fyro/render/uniform.h
+    fyro/render/vertex_layout.cc fyro/render/vertex_layout.h
+    fyro/render/viewportdef.cc fyro/render/viewportdef.h
     )
     
 set(src_base
-    tred/assert.cc tred/assert.h
-    tred/cint.cc tred/cint.h
-    tred/dependency_opengl.cc tred/dependency_opengl.h
-    tred/dependency_sdl.cc tred/dependency_sdl.h tred/dependency_glad.h
-    tred/fyro.h
-    tred/game.cc tred/game.h
-    tred/log.cc tred/log.h
-    tred/random.cc tred/random.h
-    tred/rect.cc tred/rect.h
-    tred/types.cc tred/types.h
-    tred/windows.sdl.convert.cc tred/windows.sdl.convert.h
+    fyro/assert.cc fyro/assert.h
+    fyro/cint.cc fyro/cint.h
+    fyro/dependency_opengl.cc fyro/dependency_opengl.h
+    fyro/dependency_sdl.cc fyro/dependency_sdl.h fyro/dependency_glad.h
+    fyro/fyro.h
+    fyro/game.cc fyro/game.h
+    fyro/log.cc fyro/log.h
+    fyro/random.cc fyro/random.h
+    fyro/rect.cc fyro/rect.h
+    fyro/types.cc fyro/types.h
+    fyro/windows.sdl.convert.cc fyro/windows.sdl.convert.h
 )
 
 set(src_pch
-    tred/pch.public.h tred/pch.private.h
+    fyro/pch.public.h fyro/pch.private.h
 )
 
 set(src
@@ -43,8 +43,8 @@ set(src
     ${src_pch}
 )
 
-add_library(tred STATIC ${src})
-target_link_libraries(tred
+add_library(fyro STATIC ${src})
+target_link_libraries(fyro
     PUBLIC
         sdl2
         opengl
@@ -57,12 +57,12 @@ target_link_libraries(tred
         project_options
         project_warnings
 )
-target_include_directories(tred
+target_include_directories(fyro
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_precompile_headers(tred
-    PUBLIC tred/pch.public.h
-    PRIVATE tred/pch.private.h
+target_precompile_headers(fyro
+    PUBLIC fyro/pch.public.h
+    PRIVATE fyro/pch.private.h
 )
 
 source_group("" FILES ${src})
@@ -75,11 +75,11 @@ source_group("pch" FILES ${src_pch})
 
 
 set(src_test
-    tred/render/vertex_layout.test.cc
+    fyro/render/vertex_layout.test.cc
     ../external/catch/main.cc
 )
 add_executable(test ${src_test})
 target_link_libraries(test
-    PUBLIC catch tred catchy
+    PUBLIC catch fyro catchy
     PRIVATE project_options project_warnings
 )

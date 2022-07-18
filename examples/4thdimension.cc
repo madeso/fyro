@@ -1,8 +1,8 @@
-#include "tred/fyro.h"
+#include "fyro/fyro.h"
 #include "sprites/onebit.h"
 #include "sprites/onebit_font.h"
-#include "tred/cint.h"
-#include "tred/random.h"
+#include "fyro/cint.h"
+#include "fyro/random.h"
 
 #include <memory>
 #include <functional>

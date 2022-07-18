@@ -8,7 +8,7 @@ embed(sprites
 
 add_library(sprites_cards STATIC ${src} ${sprites})
 target_link_libraries(sprites_cards
-    PUBLIC tred
+    PUBLIC fyro
     PRIVATE project_options project_warnings
 )
 target_include_directories(sprites_cards

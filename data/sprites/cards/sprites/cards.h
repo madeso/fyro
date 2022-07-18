@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tred/rect.h"
-#include "tred/render/texture.h"
+#include "fyro/rect.h"
+#include "fyro/render/texture.h"
 
 #include <array>
 

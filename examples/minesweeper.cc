@@ -1,4 +1,4 @@
-#include "tred/fyro.h"
+#include "fyro/fyro.h"
 
 #include <array>
 #include <vector>
@@ -6,7 +6,7 @@
 #include "sprites/onebit.h"
 #include "sprites/onebit_font.h"
 
-#include "tred/random.h"
+#include "fyro/random.h"
 
 
 // todo(Gustav): add markers.. bomb and question

@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
-#include "tred/assert.h"
+#include "fyro/assert.h"
 
 
 int main( int argc, char* argv[])

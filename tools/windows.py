@@ -6,7 +6,7 @@ import buildtools.windows as build
 
 def main():
     """main function"""
-    data = build.default_data('tred')
+    data = build.default_data('fyro')
     build.add_dependency_sdl2(data)
     build.add_dependency_python(data)
     build.main(data)

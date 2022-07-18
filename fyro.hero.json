@@ -1,0 +1,19 @@
+{
+    "project_directories":
+    [
+        "src/fyro/render",
+        "examples/main.cc",
+        "examples/assets.cc",
+        "examples/assets.h"
+    ],
+    "include_directories":
+    [
+        "src"
+    ],
+
+    "precompiled_headers":
+    [
+        "src/fyro/pch.private.h",
+        "src/fyro/pch.public.h"
+    ]
+}
