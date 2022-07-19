@@ -133,7 +133,7 @@ struct ExampleGame : public State
 	}
 };
 #else
-struct ExampleGame : public State
+struct ExampleGame : public Game
 {
 	ColorFlips flips;
 	glm::vec2 mouse;
@@ -169,6 +169,7 @@ struct ExampleGame : public State
 };
 #endif
 
+
 int
 main(int, char**)
 {
@@ -176,8 +177,7 @@ main(int, char**)
 	(
 		"Example", glm::ivec2{800, 600}, false, []()
 		{
-			auto game = std::make_shared<Game>();
-			game->state = std::make_shared<ExampleGame>();
+			auto game = std::make_shared<ExampleGame>();
 			return game;
 		}
 	);
