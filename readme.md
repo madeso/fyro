@@ -1,7 +1,7 @@
 # Fyro
 
-[![windows](https://github.com/madeso/fyro/workflows/windows/badge.svg?branch=master)](https://github.com/madeso/fyro/actions?query=workflow%3Awindows)
-[![linux](https://github.com/madeso/fyro/workflows/linux/badge.svg?branch=master)](https://github.com/madeso/fyro/actions?query=workflow%3Alinux)
+[![windows](https://github.com/madeso/fyro/actions/workflows/windows.yml/badge.svg)](https://github.com/madeso/fyro/actions/workflows/windows.yml)
+[![linux](https://github.com/madeso/fyro/actions/workflows/linux.yml/badge.svg)](https://github.com/madeso/fyro/actions/workflows/linux.yml)
 
 
 
