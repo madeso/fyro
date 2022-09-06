@@ -16,3 +16,9 @@
 [submodule "tools/buildtools"]
 	path = tools/buildtools
 	url = git@github.com:madeso/build
+[submodule "external/lox"]
+	path = external/lox
+	url = git@github.com:madeso/lox.git
+[submodule "external/physfs"]
+	path = external/physfs
+	url = git@github.com:icculus/physfs.git

@@ -48,13 +48,16 @@ set(src
 add_executable(fyro ${src})
 target_link_libraries(fyro
 	PUBLIC
-		sdl2
-		opengl
-		imgui
+		external::sdl2
+		external::opengl
+		external::dear_imgui
 		fmt::fmt
 		stb::image
-		glm
+		external::glm
 		embed
+		lox::liblox
+		external::json
+		external::physfs
 	PRIVATE
 		project_options
 		project_warnings

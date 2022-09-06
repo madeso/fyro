@@ -1,0 +1,19 @@
+class GameState
+{
+	public fun step(dt)
+	{
+	}
+
+	public fun render(cmd)
+	{
+		cmd.windowbox(200, 200);
+
+		var background = new fyro.Rgb(0.2, 0.2, 0.2);
+		cmd.clear(background);
+
+		var red = new fyro.Rgb(1, 0, 0);
+		cmd.rect(red, 10, 10, 50, 50);
+	}
+}
+
+fyro.set_state(new GameState());
