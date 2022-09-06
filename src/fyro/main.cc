@@ -277,6 +277,11 @@ struct ExampleGame : public Game
 				const auto width = static_cast<float>(ah.require_float());
 				const auto height = static_cast<float>(ah.require_float());
 				ah.complete();
+
+				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
+				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+
 				r.data->layer = render::with_layer2(r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height});
 				return lox::make_nil();
 			})
@@ -284,6 +289,9 @@ struct ExampleGame : public Game
 			{
 				auto color = ah.require_native<Rgb>();
 				ah.complete();
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); }
+
 				r.data->layer->batch->quad({}, r.data->layer->viewport_aabb_in_worldspace, {}, {color->r, color->g, color->b, 1.0f});
 				return lox::make_nil();
 			})
@@ -294,7 +302,14 @@ struct ExampleGame : public Game
 				const auto y = static_cast<float>(ah.require_float());
 				const auto width = static_cast<float>(ah.require_float());
 				const auto height = static_cast<float>(ah.require_float());
+
 				ah.complete();
+
+				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
+				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); }
+
 				r.data->layer->batch->quad({},
 					Rect{width, height}.translate(x, y),
 					{}, {color->r, color->g, color->b, 1.0f}
