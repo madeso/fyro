@@ -1,0 +1,112 @@
+// Based on "Coding "Snake" in 4 min 30 sec (plain browser JavaScript)" by Chris DeLeon
+// https://www.youtube.com/watch?v=xGmXxpIj6vs
+// refactored to be a bit less hacky and fit with fyro
+
+class Point
+{
+	public var x;
+	public var y;
+
+	Point(x, y)
+	{
+		this.x = x;
+		this.y = y;
+	}
+}
+
+class GameState
+{
+	// player x y
+	public var px = 10;
+	public var py = 10;
+
+	// input
+	public var xv = 0;
+	public var yv = 0;
+
+	// game scale
+	public var gs = 20;
+
+	// tile count
+	public var tc = 20;
+
+	// apple x y
+	public var ax = 15;
+	public var ay = 15;
+
+	public var trail = [];
+	public var tail = 5;
+
+	public var accum = 0.0;
+
+	public var random = new Random();
+
+	public fun step(dt)
+	{
+		// handle input
+		if(fyro.input.left)  { this.xv = -1;  this.yv =  0; }
+		if(fyro.input.down)  { this.xv =  0;  this.yv = -1; }
+		if(fyro.input.right) { this.xv =  1;  this.yv =  0; }
+		if(fyro.input.up)    { this.xv =  0;  this.yv =  1; }
+
+		accum += dt;
+		var time = 0.3;
+		if( accum < time) { return; }
+		accum -= time;
+
+		this.px += this.xv;
+		this.py += this.yv;
+
+		// wrap around
+		if(this.px < 0) { this.px= this.tc-1; }
+		if(this.px > this.tc-1) { this.px = 0; }
+		if(this.py < 0) { this.py= this.tc-1; }
+		if(this.py > this.tc-1) { this.py = 0; }
+
+		// collision with tail
+		for(var i=0; i<this.trail.length(); i++)
+		{
+			if(this.trail[i].x == this.px and this.trail[i].y == this.py)
+			{
+				this.tail = 5;
+			}
+		}
+
+		// move tail
+		this.trail.add(new Point(this.px, this.py));
+		while(this.trail.length() > this.tail)
+		{
+			this.trail.remove_front();
+		}
+
+		// eat apple
+		if(this.ax == this.px and this.ay == this.py)
+		{
+			this.tail++;
+			this.ax = this.random.next(tc);
+			this.ay = this.random.next(tc);
+		}
+	}
+
+	public fun render(cmd)
+	{
+		// cmd.extend(200, 200);
+		cmd.windowbox(this.gs * this.tc, this.gs * this.tc);
+
+		// todo(Gustav): find better colors
+		var background = new Rgb(0, 0, 0);
+		var snake = new Rgb(0.75, 1, 0);
+		var apple = new Rgb(1, 0, 0);
+
+		cmd.clear(background);
+	
+		for(var i=0; i < this.trail.length(); i++)
+		{
+			cmd.rect(snake, this.trail[i].x*this.gs, this.trail[i].y*this.gs, this.gs-2, this.gs-2);
+		}
+		
+		cmd.rect(apple, this.ax * this.gs, this.ay * this.gs, this.gs-2, this.gs-2);
+	}
+}
+
+fyro.set_state(new GameState());
