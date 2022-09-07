@@ -329,6 +329,14 @@ InputFrame capture_keyboard(const KeyboardMapping& mapping)
 	return r;
 }
 
+float make_stable(float f)
+{
+	const float ff = f > 0.0f ? f : -f;
+
+	if (ff <= 0.18f) { return 0.0f; }
+	else { return f; }
+}
+
 InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 {
 	// The state is a value ranging from -32768 to 32767.
@@ -337,12 +345,12 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 		const auto s = SDL_GameControllerGetAxis(gamecontroller, axis);
 		if(s >= 0)
 		{
-			return static_cast<float>(s)/32767.0f;
+			return make_stable(static_cast<float>(s)/32767.0f);
 		}
 		else
 		{
 			// don't include sign here as s is already negative
-			return static_cast<float>(s)/32768.0f;
+			return make_stable(static_cast<float>(s)/32768.0f);
 		}
 	};
 
@@ -352,7 +360,7 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 		const auto s = SDL_GameControllerGetAxis(gamecontroller, axis);
 		union { Sint16 s; Uint16 u;} cast;
 		cast.s = s;
-		return static_cast<float>(cast.u) / 32767.0f;
+		return make_stable(static_cast<float>(cast.u) / 32767.0f);
 	};
 
 	const auto from_button = [gamecontroller](SDL_GameControllerButton button) -> bool
