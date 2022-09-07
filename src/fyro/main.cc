@@ -681,7 +681,7 @@ struct ExampleGame : public Game
 
 		// todo(Gustav): validate argumends and raise script error on invalid
 		fyro->define_native_class<RenderArg>("RenderCommand")
-			.add_function("windowbox", [](RenderArg& r, lox::ArgumentHelper& ah)
+			.add_function("windowbox", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				const auto width = static_cast<float>(ah.require_float());
 				const auto height = static_cast<float>(ah.require_float());
@@ -694,17 +694,18 @@ struct ExampleGame : public Game
 				r.data->layer = render::with_layer2(r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height});
 				return lox::make_nil();
 			})
-			.add_function("clear", [](RenderArg& r, lox::ArgumentHelper& ah)
+			.add_function("clear", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto color = ah.require_native<Rgb>();
 				ah.complete();
 				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
-				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); }
+				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
+				if(r.data->layer->batch == nullptr) { lox::raise_error("internal error: mising batch"); return nullptr; }
 
 				r.data->layer->batch->quad({}, r.data->layer->viewport_aabb_in_worldspace, {}, {color->r, color->g, color->b, 1.0f});
 				return lox::make_nil();
 			})
-			.add_function("rect", [](RenderArg& r, lox::ArgumentHelper& ah)
+			.add_function("rect", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto color = ah.require_native<Rgb>();
 				const auto x = static_cast<float>(ah.require_float());
@@ -717,7 +718,8 @@ struct ExampleGame : public Game
 				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
 				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
 				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
-				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); }
+				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
+				if(r.data->layer->batch == nullptr) { lox::raise_error("internal error: mising batch"); return nullptr; }
 
 				r.data->layer->batch->quad({},
 					Rect{width, height}.translate(x, y),
