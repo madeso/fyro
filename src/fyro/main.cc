@@ -835,7 +835,7 @@ int run(int argc, char** argv)
 	{
 		fs::path folder = argv[1];
 		folder = fs::canonical(folder);
-		physfs.setup(folder.c_str());
+		physfs.setup(folder.string());
 	}
 	else
 	{
