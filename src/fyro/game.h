@@ -1,7 +1,6 @@
 #pragma once
 
-
-
+#include "SDL.h"
 
 #include <memory>
 #include <functional>
@@ -33,6 +32,9 @@ struct Game
 	virtual void on_mouse_position(const render::InputCommand&, const glm::ivec2& position);
 	virtual void on_mouse_button(const render::InputCommand&, input::MouseButton button, bool down);
 	virtual void on_mouse_wheel(int scroll);
+
+	virtual void on_added_controller(SDL_GameController* controller);
+	virtual void on_lost_joystick_instance(int instance_id);
 };
 
 int run_game(const std::string& title, const glm::ivec2& size, bool call_imgui, std::function<std::shared_ptr<Game>()> make_game);

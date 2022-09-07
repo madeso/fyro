@@ -354,7 +354,7 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 	InputFrame r;
 
 	r.axis_x = from_axis(SDL_CONTROLLER_AXIS_RIGHTX);
-	r.axis_y = from_axis(SDL_CONTROLLER_AXIS_RIGHTY);
+	r.axis_y = -from_axis(SDL_CONTROLLER_AXIS_RIGHTY);
 
 	r.axis_trigger_left = from_trigger(SDL_CONTROLLER_AXIS_TRIGGERLEFT);
 	r.axis_trigger_right = from_trigger(SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
@@ -437,19 +437,46 @@ struct InputDevice_Keyboard : InputDevice
 struct InputDevice_Gamecontroller : InputDevice
 {
 	SDL_GameController* controller;
+	std::string name;
 
 	explicit InputDevice_Gamecontroller(SDL_GameController* c)
 		 : controller(c)
+		, name(collect_name(c))
 	{
+	}
+
+	static std::string collect_name(SDL_GameController* controller)
+	{
+		if (controller == nullptr) { return "missing controller"; }
+
+		const char* name = SDL_GameControllerName(controller);
+		if (name) { return name; }
+		else { return "<unnamed controller>"; }
+	}
+
+	~InputDevice_Gamecontroller()
+	{
+		clear_controller();
+	}
+
+	void clear_controller()
+	{
+		if (controller)
+		{
+			SDL_GameControllerClose(controller);
+			controller = nullptr;
+		}
+	}
+
+	int get_device_index()
+	{
+		auto* joystick = SDL_GameControllerGetJoystick(controller);
+		return SDL_JoystickInstanceID(joystick);
 	}
 
 	std::string get_name() override
 	{
-		if(controller == nullptr) { return "missing controller"; }
-
-		const char* name = SDL_GameControllerName(controller);
-		if(name) { return name; }
-		else { return "<unnamed controller>"; }
+		return name;
 	}
 
 	bool is_connected() override
@@ -506,14 +533,27 @@ struct Player
 
 struct Input
 {
-	std::vector<std::shared_ptr<InputDevice_Gamecontroller>> controllers;
+	std::map<int, std::shared_ptr<InputDevice_Gamecontroller>> controllers;
 	std::vector<std::shared_ptr<InputDevice_Keyboard>> keyboards;
 	std::vector<std::shared_ptr<Player>> players;
 	std::size_t next_player = 0;
 
 	void add_controller(SDL_GameController* controller)
 	{
-		controllers.emplace_back(std::make_shared<InputDevice_Gamecontroller>(controller));
+		auto ctrl = std::make_shared<InputDevice_Gamecontroller>(controller);
+		const auto index = ctrl->get_device_index();
+		std::cout << "Connected " << index << ": " << ctrl->get_name() << "\n";
+		controllers.insert({index, ctrl});
+	}
+
+	void lost_controller(int instance_id)
+	{
+		if (auto found = controllers.find(instance_id); found != controllers.end())
+		{
+			std::cout << "Lost " << found->first << ": " << found->second->get_name() << "\n";
+			found->second->clear_controller();
+			controllers.erase(found);
+		}
 	}
 
 	void add_keyboard(std::shared_ptr<InputDevice_Keyboard> kb)
@@ -525,8 +565,9 @@ struct Input
 
 	std::shared_ptr<InputDevice> find_device()
 	{
-		for(auto& c: controllers)
+		for(auto& co: controllers)
 		{
+			auto& c = co.second;
 			if(c->free && c->capture_frame().button_start)
 			{
 				c->free = false;
@@ -570,7 +611,7 @@ struct Input
 		{
 			auto r = players[next_player];
 			next_player += 1;
-			if(r->device == nullptr) { r->device = find_device(); }
+			if(r->is_connected() == false) { r->device = find_device(); }
 			return r->capture_frame();
 		}
 	}
@@ -789,6 +830,16 @@ struct ExampleGame : public Game
 
 	void on_mouse_position(const render::InputCommand&, const glm::ivec2&) override
 	{
+	}
+
+	void on_added_controller(SDL_GameController* controller) override
+	{
+		input.add_controller(controller);
+	}
+
+	void on_lost_joystick_instance(int instance_id) override
+	{
+		input.lost_controller(instance_id);
 	}
 };
 

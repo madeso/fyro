@@ -33,6 +33,9 @@ void Game::on_mouse_position(const render::InputCommand&, const glm::ivec2&) {}
 void Game::on_mouse_button(const render::InputCommand&, input::MouseButton, bool) {}
 void Game::on_mouse_wheel(int) {}
 
+void Game::on_added_controller(SDL_GameController*) {}
+void Game::on_lost_joystick_instance(int) {}
+
 namespace
 {
 	void setup_open_gl(render::OpenglStates* states, SDL_Window* window, SDL_GLContext glcontext, bool imgui)
@@ -246,7 +249,26 @@ void pump_events(Window* window)
 		case SDL_QUIT:
 			window->running = false;
 			break;
-		break;
+		// Sint32 which;
+		// The joystick device index for the ADDED event, instance id for the REMOVED event
+		case SDL_JOYDEVICEADDED:
+			{
+				const Sint32 device_index = e.jdevice.which;
+
+				if (SDL_IsGameController(device_index) == SDL_TRUE)
+				{
+					SDL_GameController* controller = SDL_GameControllerOpen(device_index);
+
+					if (controller != nullptr)
+					{
+						window->game->on_added_controller(controller);
+					}
+				}
+			}
+			break;
+		case SDL_JOYDEVICEREMOVED:
+			window->game->on_lost_joystick_instance(e.jdevice.which);
+			break;
 		default:
 			// ignore other events
 			break;
@@ -290,7 +312,7 @@ int setup_and_run(std::function<std::shared_ptr<Game>()> make_game, const std::s
 int run_game(const std::string& title, const glm::ivec2& size, bool call_imgui, std::function<std::shared_ptr<Game>()> make_game)
 {
 	constexpr Uint32 flags =
-		SDL_INIT_VIDEO
+		SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC
 		;
 
 	if(SDL_Init(flags) != 0)

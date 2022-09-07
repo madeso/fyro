@@ -6,7 +6,7 @@ class GameState
 	public fun update(dt)
 	{
 		var player = fyro.get_input();
-		var speed = 10.0;
+		var speed = 30.0;
 
 		this.px = this.px + player.axis_x * dt * speed;
 		this.py = this.py + player.axis_y * dt * speed;
