@@ -749,7 +749,7 @@ struct ExampleGame : public Game
 
 				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
 				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
-				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
 
 				r.data->layer = render::with_layer2(r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height});
 				return lox::make_nil();
@@ -758,7 +758,7 @@ struct ExampleGame : public Game
 			{
 				auto color = ah.require_native<Rgb>();
 				ah.complete();
-				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
 				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				if(r.data->layer->batch == nullptr) { lox::raise_error("internal error: mising batch"); return nullptr; }
 
@@ -777,7 +777,7 @@ struct ExampleGame : public Game
 
 				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
 				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
-				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); }
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
 				if(r.data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				if(r.data->layer->batch == nullptr) { lox::raise_error("internal error: mising batch"); return nullptr; }
 
