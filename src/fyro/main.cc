@@ -310,14 +310,12 @@ InputFrame capture_keyboard(const KeyboardMapping& mapping)
 	r.button_dpad_down = get(mapping.button_dpad_down);
 	r.button_dpad_left = get(mapping.button_dpad_left);
 	r.button_dpad_right = get(mapping.button_dpad_right);
-	#if SDL_VERSION_ATLEAST(2, 0, 14)
 	r.button_misc1 = get(mapping.button_misc1);
 	r.button_paddle1 = get(mapping.button_paddle1);
 	r.button_paddle2 = get(mapping.button_paddle2);
 	r.button_paddle3 = get(mapping.button_paddle3);
 	r.button_paddle4 = get(mapping.button_paddle4);
 	r.button_touchpad = get(mapping.button_touchpad);
-	#endif
 
 	return r;
 }
@@ -376,12 +374,15 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 	r.button_dpad_down = from_button(SDL_CONTROLLER_BUTTON_DPAD_DOWN);
 	r.button_dpad_left = from_button(SDL_CONTROLLER_BUTTON_DPAD_LEFT);
 	r.button_dpad_right = from_button(SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+	
+	#if SDL_VERSION_ATLEAST(2, 0, 14)
 	r.button_misc1 = from_button(SDL_CONTROLLER_BUTTON_MISC1);
 	r.button_paddle1 = from_button(SDL_CONTROLLER_BUTTON_PADDLE1);
 	r.button_paddle2 = from_button(SDL_CONTROLLER_BUTTON_PADDLE2);
 	r.button_paddle3 = from_button(SDL_CONTROLLER_BUTTON_PADDLE3);
 	r.button_paddle4 = from_button(SDL_CONTROLLER_BUTTON_PADDLE4);
 	r.button_touchpad = from_button(SDL_CONTROLLER_BUTTON_TOUCHPAD);
+	#endif
 
 	return r;
 }
