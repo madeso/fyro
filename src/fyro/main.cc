@@ -310,12 +310,14 @@ InputFrame capture_keyboard(const KeyboardMapping& mapping)
 	r.button_dpad_down = get(mapping.button_dpad_down);
 	r.button_dpad_left = get(mapping.button_dpad_left);
 	r.button_dpad_right = get(mapping.button_dpad_right);
+	#if SDL_VERSION_ATLEAST(2, 0, 14)
 	r.button_misc1 = get(mapping.button_misc1);
 	r.button_paddle1 = get(mapping.button_paddle1);
 	r.button_paddle2 = get(mapping.button_paddle2);
 	r.button_paddle3 = get(mapping.button_paddle3);
 	r.button_paddle4 = get(mapping.button_paddle4);
 	r.button_touchpad = get(mapping.button_touchpad);
+	#endif
 
 	return r;
 }
