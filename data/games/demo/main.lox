@@ -1,7 +1,15 @@
 class GameState
 {
-	public fun step(dt)
+	public var px = 0;
+	public var py = 0;
+
+	public fun update(dt)
 	{
+		var player = fyro.get_input();
+		var speed = 10.0;
+
+		this.px = this.px + player.axis_x * dt * speed;
+		this.py = this.py + player.axis_y * dt * speed;
 	}
 
 	public fun render(cmd)
@@ -12,7 +20,7 @@ class GameState
 		cmd.clear(background);
 
 		var red = new fyro.Rgb(1, 0, 0);
-		cmd.rect(red, 10, 10, 50, 50);
+		cmd.rect(red, this.px, this.py, 50, 50);
 	}
 }
 
