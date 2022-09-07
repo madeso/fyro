@@ -181,10 +181,10 @@ struct RenderArg
 
 struct KeyboardMapping
 {
-	std::optional<SDL_Scancode> axis_x_neg;
-	std::optional<SDL_Scancode> axis_x_pos;
-	std::optional<SDL_Scancode> axis_y_neg;
-	std::optional<SDL_Scancode> axis_y_pos;
+	std::optional<SDL_Scancode> axis_left_x_neg; std::optional<SDL_Scancode> axis_left_x_pos;
+	std::optional<SDL_Scancode> axis_left_y_neg; std::optional<SDL_Scancode> axis_left_y_pos;
+	std::optional<SDL_Scancode> axis_right_x_neg; std::optional<SDL_Scancode> axis_right_x_pos;
+	std::optional<SDL_Scancode> axis_right_y_neg; std::optional<SDL_Scancode> axis_right_y_pos;
 
 	std::optional<SDL_Scancode> axis_trigger_left;
 	std::optional<SDL_Scancode> axis_trigger_right;
@@ -216,11 +216,11 @@ KeyboardMapping create_default_mapping_for_player1()
 {
 	KeyboardMapping m;
 
-	m.axis_x_neg = SDL_SCANCODE_LEFT;
-	m.axis_x_pos = SDL_SCANCODE_RIGHT;
+	m.axis_left_x_neg = SDL_SCANCODE_LEFT;
+	m.axis_left_x_pos = SDL_SCANCODE_RIGHT;
 
-	m.axis_y_neg = SDL_SCANCODE_DOWN;
-	m.axis_y_pos = SDL_SCANCODE_UP;
+	m.axis_left_y_neg = SDL_SCANCODE_DOWN;
+	m.axis_left_y_pos = SDL_SCANCODE_UP;
 
 	m.button_a = SDL_SCANCODE_S;
 	m.button_b = SDL_SCANCODE_D;
@@ -234,8 +234,10 @@ KeyboardMapping create_default_mapping_for_player1()
 
 struct InputFrame
 {
-	float axis_x = 0.0f;
-	float axis_y = 0.0f;
+	float axis_left_x = 0.0f;
+	float axis_left_y = 0.0f;
+	float axis_right_x = 0.0f;
+	float axis_right_y = 0.0f;
 
 	float axis_trigger_left = 0.0f;
 	float axis_trigger_right = 0.0f;
@@ -282,15 +284,22 @@ InputFrame capture_keyboard(const KeyboardMapping& mapping)
 		}
 	};
 
-	const float axis_x_neg = get(mapping.axis_x_neg) ? -1.0f : 0.0f;
-	const float axis_x_pos = get(mapping.axis_x_pos) ?  1.0f : 0.0f;
-	const float axis_y_neg = get(mapping.axis_y_neg) ? -1.0f : 0.0f;
-	const float axis_y_pos = get(mapping.axis_y_pos) ?  1.0f : 0.0f;
+	const float axis_left_x_neg = get(mapping.axis_left_x_neg) ? -1.0f : 0.0f;
+	const float axis_left_x_pos = get(mapping.axis_left_x_pos) ?  1.0f : 0.0f;
+	const float axis_left_y_neg = get(mapping.axis_left_y_neg) ? -1.0f : 0.0f;
+	const float axis_left_y_pos = get(mapping.axis_left_y_pos) ?  1.0f : 0.0f;
+
+	const float axis_right_x_neg = get(mapping.axis_right_x_neg) ? -1.0f : 0.0f;
+	const float axis_right_x_pos = get(mapping.axis_right_x_pos) ?  1.0f : 0.0f;
+	const float axis_right_y_neg = get(mapping.axis_right_y_neg) ? -1.0f : 0.0f;
+	const float axis_right_y_pos = get(mapping.axis_right_y_pos) ?  1.0f : 0.0f;
 
 	InputFrame r;
 
-	r.axis_x = axis_x_neg + axis_x_pos;
-	r.axis_y = axis_y_neg + axis_y_pos;
+	r.axis_left_x = axis_left_x_neg + axis_left_x_pos;
+	r.axis_left_y = axis_left_y_neg + axis_left_y_pos;
+	r.axis_right_x = axis_right_x_neg + axis_right_x_pos;
+	r.axis_right_y = axis_right_y_neg + axis_right_y_pos;
 
 	r.axis_trigger_left = get(mapping.axis_trigger_left) ? 1.0f : 0.0f;
 	r.axis_trigger_right = get(mapping.axis_trigger_right) ? 1.0f : 0.0f;
@@ -353,8 +362,10 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 
 	InputFrame r;
 
-	r.axis_x = from_axis(SDL_CONTROLLER_AXIS_RIGHTX);
-	r.axis_y = -from_axis(SDL_CONTROLLER_AXIS_RIGHTY);
+	r.axis_left_x = from_axis(SDL_CONTROLLER_AXIS_LEFTX);
+	r.axis_left_y = -from_axis(SDL_CONTROLLER_AXIS_LEFTY);
+	r.axis_right_x = from_axis(SDL_CONTROLLER_AXIS_RIGHTX);
+	r.axis_right_y = -from_axis(SDL_CONTROLLER_AXIS_RIGHTY);
 
 	r.axis_trigger_left = from_trigger(SDL_CONTROLLER_AXIS_TRIGGERLEFT);
 	r.axis_trigger_right = from_trigger(SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
@@ -770,8 +781,10 @@ struct ExampleGame : public Game
 			})
 			;
 		fyro->define_native_class<InputFrame>("InputFrame")
-			.add_getter<lox::Tf>("axis_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_x); })
-			.add_getter<lox::Tf>("axis_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_y); })
+			.add_getter<lox::Tf>("axis_left_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); })
+			.add_getter<lox::Tf>("axis_left_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_y); })
+			.add_getter<lox::Tf>("axis_right_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_x); })
+			.add_getter<lox::Tf>("axis_right_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_y); })
 			.add_getter<lox::Tf>("axis_trigger_left", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_left); })
 			.add_getter<lox::Tf>("axis_trigger_right", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_right); })
 			.add_getter<bool>("button_a", [](const InputFrame& f) { return f.button_a; })

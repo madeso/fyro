@@ -8,8 +8,8 @@ class GameState
 		var player = fyro.get_input();
 		var speed = 30.0;
 
-		this.px = this.px + player.axis_x * dt * speed;
-		this.py = this.py + player.axis_y * dt * speed;
+		this.px = this.px + player.axis_left_x * dt * speed;
+		this.py = this.py + player.axis_left_y * dt * speed;
 	}
 
 	public fun render(cmd)
