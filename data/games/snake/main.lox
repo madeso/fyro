@@ -7,7 +7,7 @@ class Point
 	public var x;
 	public var y;
 
-	Point(x, y)
+	public fun init(x, y)
 	{
 		this.x = x;
 		this.y = y;
