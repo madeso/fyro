@@ -520,6 +520,9 @@ struct InputDevice_Gamecontroller : InputDevice
 struct Player
 {
 	int age = 0;
+	InputFrame current_frame;
+	InputFrame last_frame;
+
 	std::shared_ptr<InputDevice> device;
 
 	Player() = default;
@@ -537,16 +540,13 @@ struct Player
 		return device && device->is_connected();
 	}
 
-	InputFrame capture_frame()
+	void update_frame()
 	{
-		if(device)
-		{
-			return device->capture_frame();
-		}
-		else
-		{
-			return InputFrame{};
-		}
+		last_frame = current_frame;
+		current_frame =  device
+			? device->capture_frame()
+			: InputFrame{}
+			;
 	}
 };
 
@@ -616,7 +616,7 @@ struct Input
 		for(auto& p: players) { p->age += 1; }
 	}
 
-	InputFrame capture_frame()
+	std::shared_ptr<Player> capture_player()
 	{
 		if(next_player >= players.size())
 		{
@@ -624,16 +624,23 @@ struct Input
 			auto r = std::make_shared<Player>();
 			r->device = find_device();
 			players.emplace_back(r);
-			return r->capture_frame();
+			r->update_frame();
+			return r;
 		}
 		else
 		{
 			auto r = players[next_player];
 			next_player += 1;
 			if(r->is_connected() == false) { r->device = find_device(); }
-			return r->capture_frame();
+			r->update_frame();
+			return r;
 		}
 	}
+};
+
+struct ScriptPlayer
+{
+	std::shared_ptr<Player> player;
 };
 
 struct State
@@ -726,8 +733,8 @@ struct ExampleGame : public Game
 		fyro->define_native_function("get_input", [this](lox::Callable*, lox::ArgumentHelper& arguments)
 		{
 			arguments.complete();
-			auto frame = input.capture_frame();
-			return lox.make_native<InputFrame>(frame);
+			auto frame = input.capture_player();
+			return lox.make_native<ScriptPlayer>(ScriptPlayer{frame});
 		});
 
 		fyro->define_native_class<Rgb>("Rgb", [](lox::ArgumentHelper& ah) -> Rgb
@@ -791,6 +798,10 @@ struct ExampleGame : public Game
 				);
 				return lox::make_nil();
 			})
+			;
+		fyro->define_native_class<ScriptPlayer>("Player")
+			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); })
+			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
 			;
 		fyro->define_native_class<InputFrame>("InputFrame")
 			.add_getter<lox::Tf>("axis_left_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); })
