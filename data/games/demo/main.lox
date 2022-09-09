@@ -1,15 +1,32 @@
 class GameState
 {
-	public var px = 0;
-	public var py = 0;
+	public var p1x = 0;
+	public var p1y = 0;
+
+	public var p2 = false;
+	public var p2x = 30;
+	public var p2y = 30;
 
 	public fun update(dt)
 	{
-		var player = fyro.get_input();
 		var speed = 30.0;
 
-		this.px = this.px + player.axis_left_x * dt * speed;
-		this.py = this.py + player.axis_left_y * dt * speed;
+		var player1 = fyro.get_input();
+		this.p1x = this.p1x + player1.current.axis_left_x * dt * speed;
+		this.p1y = this.p1y + player1.current.axis_left_y * dt * speed;
+
+		if(player1.current.button_x and player1.last.button_x == false)
+		{
+			print "p2 added";
+			this.p2 = true;
+		}
+
+		if(this.p2)
+		{
+			var player2 = fyro.get_input();
+			this.p2x = this.p2x + player2.current.axis_left_x * dt * speed;
+			this.p2y = this.p2y + player2.current.axis_left_y * dt * speed;
+		}
 	}
 
 	public fun render(cmd)
@@ -20,7 +37,13 @@ class GameState
 		cmd.clear(background);
 
 		var red = new fyro.Rgb(1, 0, 0);
-		cmd.rect(red, this.px, this.py, 50, 50);
+		cmd.rect(red, this.p1x, this.p1y, 50, 50);
+
+		if(this.p2)
+		{
+			var blue = new fyro.Rgb(0, 0, 1);
+			cmd.rect(blue, this.p2x, this.p2y, 50, 50);
+		}
 	}
 }
 
