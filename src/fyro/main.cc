@@ -2,6 +2,7 @@
 #include <fstream>
 #include <filesystem>
 #include <optional>
+#include <random>
 
 #include <nlohmann/json.hpp>
 #include "physfs.h"
@@ -687,6 +688,32 @@ struct ScriptState : State
 	}
 };
 
+struct ScriptRandom
+{
+	using Engine = std::mt19937;
+
+	Engine generator;
+
+	static Engine create_engine()
+	{
+		std::random_device seeder;
+		Engine generator(seeder());
+		return generator;
+	}
+
+	ScriptRandom()
+		: generator( create_engine() )
+	{
+	}
+
+	lox::Ti next_int(lox::Ti max)
+	{
+		std::uniform_int_distribution<lox::Ti> distribution(0, max-1);
+		return distribution(generator);
+	}
+};
+
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -803,6 +830,14 @@ struct ExampleGame : public Game
 			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); })
 			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
 			;
+		fyro->define_native_class<ScriptRandom>("Random")
+			.add_function("next_int", [](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto max_value = ah.require_int();
+				ah.complete();
+				const auto value = r.next_int(max_value);
+				return lox::make_number_int(value);
+			});
 		fyro->define_native_class<InputFrame>("InputFrame")
 			.add_getter<lox::Tf>("axis_left_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); })
 			.add_getter<lox::Tf>("axis_left_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_y); })

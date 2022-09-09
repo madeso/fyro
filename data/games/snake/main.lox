@@ -39,20 +39,23 @@ class GameState
 
 	public var accum = 0.0;
 
-	public var random = new Random();
+	public var random = new fyro.Random();
 
-	public fun step(dt)
+	public fun update(dt)
 	{
-		// handle input
-		if(fyro.input.left)  { this.xv = -1;  this.yv =  0; }
-		if(fyro.input.down)  { this.xv =  0;  this.yv = -1; }
-		if(fyro.input.right) { this.xv =  1;  this.yv =  0; }
-		if(fyro.input.up)    { this.xv =  0;  this.yv =  1; }
-
-		accum += dt;
+		var upper = 0.8;
 		var time = 0.3;
-		if( accum < time) { return; }
-		accum -= time;
+
+		// handle input
+		var input = fyro.get_input();
+		if(input.current.axis_left_x < -upper) { this.xv = -1;  this.yv =  0; }
+		if(input.current.axis_left_y < -upper) { this.xv =  0;  this.yv = -1; }
+		if(input.current.axis_left_x >  upper) { this.xv =  1;  this.yv =  0; }
+		if(input.current.axis_left_y >  upper) { this.xv =  0;  this.yv =  1; }
+
+		this.accum += dt;
+		if( this.accum < time) { return; }
+		this.accum -= time;
 
 		this.px += this.xv;
 		this.py += this.yv;
@@ -64,17 +67,18 @@ class GameState
 		if(this.py > this.tc-1) { this.py = 0; }
 
 		// collision with tail
-		for(var i=0; i<this.trail.length(); i++)
+		for(var i=0; i<this.trail.len(); i+= 1)
 		{
 			if(this.trail[i].x == this.px and this.trail[i].y == this.py)
 			{
 				this.tail = 5;
+				this.trail = [];
 			}
 		}
 
 		// move tail
-		this.trail.add(new Point(this.px, this.py));
-		while(this.trail.length() > this.tail)
+		this.trail.push(new Point(this.px, this.py));
+		while(this.trail.len() > this.tail)
 		{
 			this.trail.remove_front();
 		}
@@ -82,9 +86,9 @@ class GameState
 		// eat apple
 		if(this.ax == this.px and this.ay == this.py)
 		{
-			this.tail++;
-			this.ax = this.random.next(tc);
-			this.ay = this.random.next(tc);
+			this.tail+=1;
+			this.ax = this.random.next_int(this.tc);
+			this.ay = this.random.next_int(this.tc);
 		}
 	}
 
@@ -94,13 +98,13 @@ class GameState
 		cmd.windowbox(this.gs * this.tc, this.gs * this.tc);
 
 		// todo(Gustav): find better colors
-		var background = new Rgb(0, 0, 0);
-		var snake = new Rgb(0.75, 1, 0);
-		var apple = new Rgb(1, 0, 0);
+		var background = new fyro.Rgb(0, 0, 0);
+		var snake = new fyro.Rgb(0.75, 1, 0);
+		var apple = new fyro.Rgb(1, 0, 0);
 
 		cmd.clear(background);
 	
-		for(var i=0; i < this.trail.length(); i++)
+		for(var i=0; i < this.trail.len(); i+=1)
 		{
 			cmd.rect(snake, this.trail[i].x*this.gs, this.trail[i].y*this.gs, this.gs-2, this.gs-2);
 		}
