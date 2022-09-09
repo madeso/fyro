@@ -12,7 +12,6 @@ class GameState
 		var speed = 30.0;
 
 		var player1 = fyro.get_input();
-
 		this.p1x = this.p1x + player1.current.axis_left_x * dt * speed;
 		this.p1y = this.p1y + player1.current.axis_left_y * dt * speed;
 
