@@ -409,105 +409,27 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 
 struct HapticsEffect
 {
-	SDL_Haptic* haptic;
-	SDL_HapticEffect effect;
-	int effect_id;
-	bool alive = true;
-	float life = 0.5f;
+	float force;
+	float life;
 
-	HapticsEffect(const HapticsEffect&) = delete;
-	void operator=(const HapticsEffect&) = delete;
-
-	explicit HapticsEffect(HapticsEffect&& rhs)
+	HapticsEffect(float f, float l)\
+		: force(f)
+		, life(l)
 	{
-		haptic = rhs.haptic;
-		effect = rhs.effect;
-		effect_id = rhs.effect_id;
+	}
 
-		rhs.haptic = nullptr;
-		rhs.effect_id = -1;
+	bool is_alive() const
+	{
+		return life > 0.0f;
 	}
 
 	void update(float dt)
 	{
 		life -= dt;
-		if (life <= 0.0f)
-		{
-			alive = false;
-		}
-	}
-
-	HapticsEffect& operator=(HapticsEffect&& rhs)
-	{
-		haptic = rhs.haptic;
-		effect = rhs.effect;
-		effect_id = rhs.effect_id;
-
-		rhs.haptic = nullptr;
-		rhs.effect_id = -1;
-
-		return *this;
-	}
-
-	HapticsEffect(SDL_Haptic* h) : haptic(h)
-	{
-		// Create the effect
-		SDL_memset(&effect, 0, sizeof(SDL_HapticEffect)); // 0 is safe default
-		effect.type = SDL_HAPTIC_LEFTRIGHT;
-		effect.periodic.direction.type = SDL_HAPTIC_POLAR; // Polar coordinates
-		effect.periodic.direction.dir[0] = 18000; // Force comes from south
-		effect.periodic.period = 1000; // 1000 ms
-		effect.periodic.magnitude = 20000; // 20000/32767 strength
-		effect.periodic.length = 5000; // 5 seconds long
-		effect.periodic.attack_length = 1000; // Takes 1 second to get max strength
-		effect.periodic.fade_length = 1000; // Takes 1 second to fade away
-
-		// Upload the effect
-		effect_id = SDL_HapticNewEffect(haptic, &effect);
-	}
-
-	void run()
-	{
-		if(haptic != nullptr)
-		{
-			SDL_HapticRunEffect(haptic, effect_id, 1);
-		}
-	}
-
-	~HapticsEffect()
-	{
-		if(haptic != nullptr)
-		{
-			SDL_HapticDestroyEffect(haptic, effect_id);
-		}
 	}
 };
 
 
-void print_haptics_effects(unsigned int q)
-{
-	bool first = true;
-	std::cout << "haptics supported: ";
-	auto print = [&first](const std::string& s)
-	{
-		if (first) { first = false; }
-		else { std::cout << ", "; }
-		std::cout << s;
-	};
-	if((q & SDL_HAPTIC_CONSTANT    ) != 0) { print("SDL_HAPTIC_CONSTANT    "); }
-	if((q & SDL_HAPTIC_SINE        ) != 0) { print("SDL_HAPTIC_SINE        "); }
-	if((q & SDL_HAPTIC_LEFTRIGHT   ) != 0) { print("SDL_HAPTIC_LEFTRIGHT   "); }
-	if((q & SDL_HAPTIC_TRIANGLE    ) != 0) { print("SDL_HAPTIC_TRIANGLE    "); }
-	if((q & SDL_HAPTIC_SAWTOOTHUP  ) != 0) { print("SDL_HAPTIC_SAWTOOTHUP  "); }
-	if((q & SDL_HAPTIC_SAWTOOTHDOWN) != 0) { print("SDL_HAPTIC_SAWTOOTHDOWN"); }
-	if((q & SDL_HAPTIC_RAMP        ) != 0) { print("SDL_HAPTIC_RAMP        "); }
-	if((q & SDL_HAPTIC_SPRING      ) != 0) { print("SDL_HAPTIC_SPRING      "); }
-	if((q & SDL_HAPTIC_DAMPER      ) != 0) { print("SDL_HAPTIC_DAMPER      "); }
-	if((q & SDL_HAPTIC_INERTIA     ) != 0) { print("SDL_HAPTIC_INERTIA     "); }
-	if((q & SDL_HAPTIC_FRICTION    ) != 0) { print("SDL_HAPTIC_FRICTION    "); }
-	if((q & SDL_HAPTIC_CUSTOM      ) != 0) { print("SDL_HAPTIC_CUSTOM      "); }
-	std::cout << "\n";
-}
 
 struct HapticsEngine
 {
@@ -518,11 +440,18 @@ struct HapticsEngine
 	{
 	}
 
-	void run()
+	void on_imgui()
+	{
+		for (std::size_t index =0; index < effects.size(); index += 1)
+		{
+			ImGui::Text("%f", effects[index].life);
+		}
+	}
+
+	void run(float force, float life)
 	{
 		if (haptic == nullptr) { return; }
-		auto e = HapticsEffect{ haptic };
-		e.run();
+		auto e = HapticsEffect{ force, life };
 		effects.emplace_back(std::move(e));
 	}
 
@@ -544,8 +473,79 @@ struct HapticsEngine
 		effects.erase(std::remove_if(effects.begin(),
 			effects.end(),
 			[&](const HapticsEffect& e)-> bool
-			{ return e.alive == false; }),
+			{ return e.is_alive()  == false; }),
 			effects.end());
+		
+		enable_disable_rumble();
+	}
+
+	void enable_disable_rumble()
+	{
+		if (haptic == nullptr) { return; }
+
+		const auto current = get_rumble_effect();
+
+		auto sdl_stop_rumble = [this]()
+		{
+			SDL_HapticRumbleStop(haptic);
+		};
+		auto sdl_start_rumble = [this, &current]()
+		{
+			SDL_HapticRumblePlay(haptic, *current, SDL_HAPTIC_INFINITY);
+		};
+
+		if (current && last_rumble)
+		{
+			// update if different
+			if (*current != *last_rumble)
+			{
+				sdl_stop_rumble();
+				sdl_start_rumble();
+			}
+		}
+		else if (current)
+		{
+			assert(!last_rumble);
+			sdl_start_rumble();
+		}
+		else if(last_rumble)
+		{
+			assert(!current);
+			sdl_stop_rumble();
+		}
+		else
+		{
+			// no rumble action needed
+		}
+
+		last_rumble = current;
+	}
+
+	std::optional<float> last_rumble = std::nullopt;
+	
+	std::optional<float> get_rumble_effect() const
+	{
+		std::optional<float> force = std::nullopt;
+		for (auto& e : effects)
+		{
+			if (force)
+			{
+				force = *force + e.force;
+			}
+			else
+			{
+				force = e.force;
+			}
+		}
+
+		if (force)
+		{
+			return std::min(1.0f, *force);
+		}
+		else
+		{
+			return std::nullopt;
+		}
 	}
 
 	HapticsEngine(const HapticsEngine&) = delete;
@@ -565,12 +565,10 @@ struct HapticsEngine
 			return nullptr;
 		}
 
-		// See if it can do sine waves
-		const auto query = SDL_HapticQuery(haptic);
-		print_haptics_effects(query);
-		if ((query & SDL_HAPTIC_LEFTRIGHT) == 0)
+		const auto initialized = SDL_HapticRumbleInit(haptic);
+		if (initialized != 0)
 		{
-			// No sine effect
+			std::cout << "SDL: rumble not supported: " << SDL_GetError() << "\n";
 			SDL_HapticClose(haptic);
 			return nullptr;
 		}
@@ -590,8 +588,9 @@ struct InputDevice
 	virtual std::string get_name() = 0;
 	virtual bool is_connected() = 0;
 	virtual InputFrame capture_frame() = 0;
-	virtual void run_haptics() = 0;
+	virtual void run_haptics(float force, float life) = 0;
 	virtual void update(float dt) = 0;
+	virtual void on_imgui() = 0;
 };
 
 struct GlobalMappings
@@ -627,11 +626,15 @@ struct InputDevice_Keyboard : InputDevice
 		return r;
 	}
 
-	void run_haptics() override
+	void run_haptics(float, float) override
 	{
 	}
 
 	void update(float) override
+	{
+	}
+
+	void on_imgui() override
 	{
 	}
 };
@@ -700,14 +703,20 @@ struct InputDevice_Gamecontroller : InputDevice
 		}
 	}
 
-	void run_haptics() override
+	void run_haptics(float force, float life) override
 	{
-		haptics.run();
+		haptics.run(force, life);
 	}
 
 	void update(float dt) override
 	{
 		haptics.update(dt);
+	}
+
+	void on_imgui() override
+	{
+		ImGui::TextUnformatted(name.c_str());
+		haptics.on_imgui();
 	}
 };
 
@@ -730,6 +739,16 @@ struct Player
 		}
 	}
 
+	void on_imgui()
+	{
+		if (device)
+		{
+			ImGui::Begin("player");
+			device->on_imgui();
+			ImGui::End();
+		}
+	}
+
 	bool is_connected()
 	{
 		return device && device->is_connected();
@@ -744,11 +763,11 @@ struct Player
 			;
 	}
 
-	void run_haptics()
+	void run_haptics(float force, float life)
 	{
 		if (device)
 		{
-			device->run_haptics();
+			device->run_haptics(force, life);
 		}
 	}
 
@@ -783,6 +802,14 @@ struct Input
 			std::cout << "Lost " << found->first << ": " << found->second->get_name() << "\n";
 			found->second->clear_controller();
 			controllers.erase(found);
+		}
+	}
+
+	void on_imgui()
+	{
+		for (auto& p : players)
+		{
+			p->on_imgui();
 		}
 	}
 
@@ -954,6 +981,11 @@ struct ExampleGame : public Game
 		bind_functions();
 	}
 
+	void on_imgui() override
+	{
+		input.on_imgui();
+	}
+
 	void run_main()
 	{
 		const auto src = read_file_to_string("main.lox");
@@ -1049,12 +1081,14 @@ struct ExampleGame : public Game
 			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
 			.add_function("run_haptics", [](ScriptPlayer&r, lox::ArgumentHelper& ah)->std::shared_ptr<lox::Object>
 			{
+				float force = static_cast<float>(ah.require_float());
+				float life = static_cast<float>(ah.require_float());
 				ah.complete();
 				if (r.player == nullptr)
 				{
 					lox::raise_error("Player not created from input!");
 				}
-				r.player->run_haptics();
+				r.player->run_haptics(force, life);
 				return lox::make_nil();
 			})
 			;
@@ -1180,6 +1214,7 @@ struct Physfs
 
 int run(int argc, char** argv)
 {
+	bool call_imgui = true;
 	auto physfs = Physfs(argv[0]);
 	
 	if(argc == 2)
@@ -1197,7 +1232,7 @@ int run(int argc, char** argv)
 
 	return run_game
 	(
-		data.title, glm::ivec2{data.width, data.height}, false, []()
+		data.title, glm::ivec2{data.width, data.height}, call_imgui, []()
 		{
 			auto game = std::make_shared<ExampleGame>();
 			game->run_main();

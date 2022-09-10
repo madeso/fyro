@@ -41,6 +41,8 @@ class GameState
 
 	public var random = new fyro.Random();
 
+	public var playing = false;
+
 	public fun update(dt)
 	{
 		var upper = 0.8;
@@ -48,17 +50,20 @@ class GameState
 
 		// handle input
 		var input = fyro.get_input();
-		if(input.current.axis_left_x < -upper) { this.xv = -1;  this.yv =  0; }
-		if(input.current.axis_left_y < -upper) { this.xv =  0;  this.yv = -1; }
-		if(input.current.axis_left_x >  upper) { this.xv =  1;  this.yv =  0; }
-		if(input.current.axis_left_y >  upper) { this.xv =  0;  this.yv =  1; }
+		if(input.current.axis_left_x < -upper) { this.playing = true; this.xv = -1;  this.yv =  0; }
+		if(input.current.axis_left_y < -upper) { this.playing = true; this.xv =  0;  this.yv = -1; }
+		if(input.current.axis_left_x >  upper) { this.playing = true; this.xv =  1;  this.yv =  0; }
+		if(input.current.axis_left_y >  upper) { this.playing = true; this.xv =  0;  this.yv =  1; }
 
 		this.accum += dt;
 		if( this.accum < time) { return; }
 		this.accum -= time;
 
-		this.px += this.xv;
-		this.py += this.yv;
+		if(this.playing)
+		{
+			this.px += this.xv;
+			this.py += this.yv;
+		}
 
 		// wrap around
 		if(this.px < 0) { this.px= this.tc-1; }
@@ -67,12 +72,17 @@ class GameState
 		if(this.py > this.tc-1) { this.py = 0; }
 
 		// collision with tail
-		for(var i=0; i<this.trail.len(); i+= 1)
+		if(this.playing)
 		{
-			if(this.trail[i].x == this.px and this.trail[i].y == this.py)
+			for(var i=0; i<this.trail.len(); i+= 1)
 			{
-				this.tail = 5;
-				this.trail = [];
+				if(this.trail[i].x == this.px and this.trail[i].y == this.py)
+				{
+					input.run_haptics(1.0, 1.0);
+					this.tail = 5;
+					this.trail = [];
+					this.playing = false;
+				}
 			}
 		}
 
@@ -89,7 +99,7 @@ class GameState
 			this.tail+=1;
 			this.ax = this.random.next_int(this.tc);
 			this.ay = this.random.next_int(this.tc);
-			input.run_haptics();
+			input.run_haptics(0.5, 0.25);
 		}
 	}
 

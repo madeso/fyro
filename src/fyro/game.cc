@@ -194,7 +194,6 @@ void pump_events(Window* window)
 		bool handle_mouse = true;
 		if(window->has_imgui())
 		{
-			std::cout << "imgui\n";
 			ImGui_ImplSDL2_ProcessEvent(&e);
 
 			auto& io = ImGui::GetIO();

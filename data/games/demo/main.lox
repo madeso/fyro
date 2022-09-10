@@ -20,6 +20,16 @@ class GameState
 			print "p2 added";
 			this.p2 = true;
 		}
+		
+		if(player1.current.button_a and player1.last.button_a == false)
+		{
+			player1.run_haptics(0.25, 0.5);
+		}
+
+		if(player1.current.button_b and player1.last.button_b == false)
+		{
+			player1.run_haptics(1, 0.1);
+		}
 
 		if(this.p2)
 		{
