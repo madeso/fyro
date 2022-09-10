@@ -59,7 +59,7 @@ Texture::Texture
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 
-	const auto include_transparency = t == Transparency::include;
+	const auto include_transparency = t != Transparency::exclude;
 
 	if(pixel_data == nullptr)
 	{
@@ -72,10 +72,11 @@ Texture::Texture
 		(
 			GL_TEXTURE_2D,
 			0,
-			include_transparency ? GL_RGBA : GL_RGB,
+			t==Transparency::only_alpha? GL_ALPHA : (include_transparency ? GL_RGBA : GL_RGB),
 			width, height,
 			0,
-			include_transparency ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE,
+			t==Transparency::only_alpha? GL_ALPHA : (include_transparency ? GL_RGBA : GL_RGB),
+			GL_UNSIGNED_BYTE,
 			pixel_data
 		);
 		if(render_pixels == false)

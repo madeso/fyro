@@ -23,7 +23,7 @@ enum class TextureRenderStyle
 
 enum class Transparency
 {
-	include, exclude
+	include, exclude, only_alpha
 };
 
 

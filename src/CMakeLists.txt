@@ -7,6 +7,7 @@ set(src_input
 )
 
 set(src_render
+	fyro/render/font.cc fyro/render/font.h
 	fyro/render/layer2.cc fyro/render/layer2.h
 	fyro/render/opengl_utils.cc fyro/render/opengl_utils.h
 	fyro/render/render2.cc fyro/render/render2.h
@@ -53,6 +54,8 @@ target_link_libraries(fyro
 		external::dear_imgui
 		fmt::fmt
 		stb::image
+		stb::truetype
+		stb::rect_pack
 		external::glm
 		embed
 		lox::liblox

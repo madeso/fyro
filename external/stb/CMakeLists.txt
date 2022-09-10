@@ -10,3 +10,5 @@ function(add_stb_library name)
 endfunction()
 
 add_stb_library(image)
+add_stb_library(truetype)
+add_stb_library(rect_pack)

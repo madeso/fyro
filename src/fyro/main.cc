@@ -4,6 +4,7 @@
 #include <optional>
 #include <random>
 
+#include "fyro/render/font.h"
 
 #include <nlohmann/json.hpp>
 #include "physfs.h"
@@ -89,7 +90,7 @@ std::vector<std::string> physfs_files_in_dir(const std::string& dir)
 	return r;
 }
 
-std::string read_file_to_string(const std::string& path)
+std::vector<char> read_file_to_bytes(const std::string& path)
 {
 	auto* file = PHYSFS_openRead(path.c_str());
 	if(file == nullptr)
@@ -113,6 +114,14 @@ std::string read_file_to_string(const std::string& path)
 	ret.emplace_back('\0');
 
 	PHYSFS_close(file);
+	return ret;
+}
+
+
+std::string read_file_to_string(const std::string& path)
+{
+	auto ret = read_file_to_bytes(path);
+	ret.emplace_back('\0');
 	return ret.data();
 }
 
@@ -961,6 +970,17 @@ struct ScriptRandom
 };
 
 
+struct ScriptFont
+{
+	std::shared_ptr<render::Font> font;
+
+	void setup(const std::string& path, float height)
+	{
+		auto bytes = read_file_to_bytes(path);
+		font = std::make_shared<render::Font>(reinterpret_cast<const unsigned char*>(bytes.data()), height);
+	}
+};
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -970,6 +990,7 @@ struct ExampleGame : public Game
 
 	std::unique_ptr<State> next_state;
 	std::unique_ptr<State> state;
+	std::vector<std::shared_ptr<render::Font>> loaded_fonts;
 
 	ExampleGame()
 		: lox(std::make_unique<PrintLoxError>(), [](const std::string& str)
@@ -985,6 +1006,10 @@ struct ExampleGame : public Game
 
 	void on_imgui() override
 	{
+		for(auto& f: loaded_fonts)
+		{
+			f->imgui();
+		}
 		input.on_imgui();
 	}
 
@@ -1077,7 +1102,39 @@ struct ExampleGame : public Game
 				);
 				return lox::make_nil();
 			})
+			.add_function("text", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto font = ah.require_native<ScriptFont>();
+				auto color = ah.require_native<Rgb>();
+				const auto x = static_cast<float>(ah.require_float());
+				const auto y = static_cast<float>(ah.require_float());
+				const auto text = ah.require_string();
+
+				ah.complete();
+				if(color == nullptr) { return nullptr; }
+				if(font == nullptr) { return nullptr; }
+
+				auto data = r.data;
+				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
+				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
+				
+				render::RenderLayer2& layer = *data->layer;
+				font->font->print(layer.batch, {color->r, color->g, color->b, 1.0f}, x, y, text);
+				
+				return lox::make_nil();
+			})
 			;
+		fyro->define_native_class<ScriptFont>
+			("Font", [this](lox::ArgumentHelper& ah) -> ScriptFont
+			{
+				const auto path = ah.require_string();
+				const auto size = static_cast<float>(ah.require_float());
+				ah.complete();
+				ScriptFont r;
+				r.setup(path, size);
+				loaded_fonts.emplace_back(r.font);
+				return r;
+			});
 		fyro->define_native_class<ScriptPlayer>("Player")
 			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); })
 			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
