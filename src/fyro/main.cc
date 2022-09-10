@@ -407,6 +407,178 @@ InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 	return r;
 }
 
+struct HapticsEffect
+{
+	SDL_Haptic* haptic;
+	SDL_HapticEffect effect;
+	int effect_id;
+	bool alive = true;
+	float life = 0.5f;
+
+	HapticsEffect(const HapticsEffect&) = delete;
+	void operator=(const HapticsEffect&) = delete;
+
+	explicit HapticsEffect(HapticsEffect&& rhs)
+	{
+		haptic = rhs.haptic;
+		effect = rhs.effect;
+		effect_id = rhs.effect_id;
+
+		rhs.haptic = nullptr;
+		rhs.effect_id = -1;
+	}
+
+	void update(float dt)
+	{
+		life -= dt;
+		if (life <= 0.0f)
+		{
+			alive = false;
+		}
+	}
+
+	HapticsEffect& operator=(HapticsEffect&& rhs)
+	{
+		haptic = rhs.haptic;
+		effect = rhs.effect;
+		effect_id = rhs.effect_id;
+
+		rhs.haptic = nullptr;
+		rhs.effect_id = -1;
+
+		return *this;
+	}
+
+	HapticsEffect(SDL_Haptic* h) : haptic(h)
+	{
+		// Create the effect
+		SDL_memset(&effect, 0, sizeof(SDL_HapticEffect)); // 0 is safe default
+		effect.type = SDL_HAPTIC_LEFTRIGHT;
+		effect.periodic.direction.type = SDL_HAPTIC_POLAR; // Polar coordinates
+		effect.periodic.direction.dir[0] = 18000; // Force comes from south
+		effect.periodic.period = 1000; // 1000 ms
+		effect.periodic.magnitude = 20000; // 20000/32767 strength
+		effect.periodic.length = 5000; // 5 seconds long
+		effect.periodic.attack_length = 1000; // Takes 1 second to get max strength
+		effect.periodic.fade_length = 1000; // Takes 1 second to fade away
+
+		// Upload the effect
+		effect_id = SDL_HapticNewEffect(haptic, &effect);
+	}
+
+	void run()
+	{
+		if(haptic != nullptr)
+		{
+			SDL_HapticRunEffect(haptic, effect_id, 1);
+		}
+	}
+
+	~HapticsEffect()
+	{
+		if(haptic != nullptr)
+		{
+			SDL_HapticDestroyEffect(haptic, effect_id);
+		}
+	}
+};
+
+
+void print_haptics_effects(int q)
+{
+	bool first = true;
+	std::cout << "haptics supported: ";
+	auto print = [&first](const std::string& s)
+	{
+		if (first) { first = false; }
+		else { std::cout << ", "; }
+		std::cout << s;
+	};
+	if((q & SDL_HAPTIC_CONSTANT    ) != 0) { print("SDL_HAPTIC_CONSTANT    "); }
+	if((q & SDL_HAPTIC_SINE        ) != 0) { print("SDL_HAPTIC_SINE        "); }
+	if((q & SDL_HAPTIC_LEFTRIGHT   ) != 0) { print("SDL_HAPTIC_LEFTRIGHT   "); }
+	if((q & SDL_HAPTIC_TRIANGLE    ) != 0) { print("SDL_HAPTIC_TRIANGLE    "); }
+	if((q & SDL_HAPTIC_SAWTOOTHUP  ) != 0) { print("SDL_HAPTIC_SAWTOOTHUP  "); }
+	if((q & SDL_HAPTIC_SAWTOOTHDOWN) != 0) { print("SDL_HAPTIC_SAWTOOTHDOWN"); }
+	if((q & SDL_HAPTIC_RAMP        ) != 0) { print("SDL_HAPTIC_RAMP        "); }
+	if((q & SDL_HAPTIC_SPRING      ) != 0) { print("SDL_HAPTIC_SPRING      "); }
+	if((q & SDL_HAPTIC_DAMPER      ) != 0) { print("SDL_HAPTIC_DAMPER      "); }
+	if((q & SDL_HAPTIC_INERTIA     ) != 0) { print("SDL_HAPTIC_INERTIA     "); }
+	if((q & SDL_HAPTIC_FRICTION    ) != 0) { print("SDL_HAPTIC_FRICTION    "); }
+	if((q & SDL_HAPTIC_CUSTOM      ) != 0) { print("SDL_HAPTIC_CUSTOM      "); }
+	std::cout << "\n";
+}
+
+struct HapticsEngine
+{
+	SDL_Haptic* haptic;
+	std::vector<HapticsEffect> effects;
+
+	explicit HapticsEngine(SDL_Joystick* joystick) : haptic(create_haptic(joystick))
+	{
+	}
+
+	void run()
+	{
+		if (haptic == nullptr) { return; }
+		auto e = HapticsEffect{ haptic };
+		e.run();
+		effects.emplace_back(std::move(e));
+	}
+
+	~HapticsEngine()
+	{
+		if (haptic != nullptr)
+		{
+			SDL_HapticClose(haptic);
+		}
+	}
+
+	void update(float dt)
+	{
+		for (auto& e : effects)
+		{
+			e.update(dt);
+		}
+
+		effects.erase(std::remove_if(effects.begin(),
+			effects.end(),
+			[&](const HapticsEffect& e)-> bool
+			{ return e.alive == false; }),
+			effects.end());
+	}
+
+	HapticsEngine(const HapticsEngine&) = delete;
+	void operator=(const HapticsEngine&) = delete;
+	HapticsEngine(HapticsEngine&&) = delete;
+	void operator=(HapticsEngine&&) = delete;
+
+	static SDL_Haptic* create_haptic(SDL_Joystick* joystick)
+	{
+		SDL_Haptic* haptic;
+
+		// Open the device
+		haptic = SDL_HapticOpenFromJoystick(joystick);
+		if (haptic == NULL)
+		{
+			// Most likely joystick isn't haptic
+			return nullptr;
+		}
+
+		// See if it can do sine waves
+		const auto query = SDL_HapticQuery(haptic);
+		print_haptics_effects(query);
+		if ((query & SDL_HAPTIC_LEFTRIGHT) == 0)
+		{
+			// No sine effect
+			SDL_HapticClose(haptic);
+			return nullptr;
+		}
+
+		return haptic;
+	}
+};
+
 
 struct InputDevice
 {
@@ -418,6 +590,8 @@ struct InputDevice
 	virtual std::string get_name() = 0;
 	virtual bool is_connected() = 0;
 	virtual InputFrame capture_frame() = 0;
+	virtual void run_haptics() = 0;
+	virtual void update(float dt) = 0;
 };
 
 struct GlobalMappings
@@ -452,15 +626,25 @@ struct InputDevice_Keyboard : InputDevice
 		const auto r = capture_keyboard(mappings->mappings[index]);
 		return r;
 	}
+
+	void run_haptics() override
+	{
+	}
+
+	void update(float) override
+	{
+	}
 };
 
 struct InputDevice_Gamecontroller : InputDevice
 {
 	SDL_GameController* controller;
+	HapticsEngine haptics;
 	std::string name;
 
 	explicit InputDevice_Gamecontroller(SDL_GameController* c)
-		 : controller(c)
+		: controller(c)
+		, haptics(SDL_GameControllerGetJoystick(c))
 		, name(collect_name(c))
 	{
 	}
@@ -506,7 +690,7 @@ struct InputDevice_Gamecontroller : InputDevice
 
 	InputFrame capture_frame() override
 	{
-		if(controller)
+		if (controller)
 		{
 			return capture_gamecontroller(controller);
 		}
@@ -514,6 +698,16 @@ struct InputDevice_Gamecontroller : InputDevice
 		{
 			return InputFrame{};
 		}
+	}
+
+	void run_haptics() override
+	{
+		haptics.run();
+	}
+
+	void update(float dt) override
+	{
+		haptics.update(dt);
 	}
 };
 
@@ -548,6 +742,22 @@ struct Player
 			? device->capture_frame()
 			: InputFrame{}
 			;
+	}
+
+	void run_haptics()
+	{
+		if (device)
+		{
+			device->run_haptics();
+		}
+	}
+
+	void update(float dt)
+	{
+		if (device)
+		{
+			device->update(dt);
+		}
 	}
 };
 
@@ -635,6 +845,14 @@ struct Input
 			if(r->is_connected() == false) { r->device = find_device(); }
 			r->update_frame();
 			return r;
+		}
+	}
+
+	void update(float dt)
+	{
+		for (auto& p : players)
+		{
+			p->update(dt);
 		}
 	}
 };
@@ -829,6 +1047,16 @@ struct ExampleGame : public Game
 		fyro->define_native_class<ScriptPlayer>("Player")
 			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); })
 			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
+			.add_function("run_haptics", [](ScriptPlayer&r, lox::ArgumentHelper& ah)->std::shared_ptr<lox::Object>
+			{
+				ah.complete();
+				if (r.player == nullptr)
+				{
+					lox::raise_error("Player not created from input!");
+				}
+				r.player->run_haptics();
+				return lox::make_nil();
+			})
 			;
 		fyro->define_native_class<ScriptRandom>("Random")
 			.add_function("next_int", [](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -872,6 +1100,7 @@ struct ExampleGame : public Game
 	void
 	on_update(float dt) override
 	{
+		input.update(dt);
 		input.start_new_frame();
 		if(state)
 		{

@@ -89,6 +89,7 @@ class GameState
 			this.tail+=1;
 			this.ax = this.random.next_int(this.tc);
 			this.ay = this.random.next_int(this.tc);
+			input.run_haptics();
 		}
 	}
 
