@@ -56,7 +56,7 @@ namespace
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
-		ImGui::StyleColorsLight();
+		ImGui::StyleColorsDark();
 
 		ImGui_ImplSDL2_InitForOpenGL(window, glcontext);
 
