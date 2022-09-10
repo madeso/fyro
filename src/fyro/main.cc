@@ -4,6 +4,7 @@
 #include <optional>
 #include <random>
 
+
 #include <nlohmann/json.hpp>
 #include "physfs.h"
 
@@ -444,7 +445,8 @@ struct HapticsEngine
 	{
 		for (std::size_t index =0; index < effects.size(); index += 1)
 		{
-			ImGui::Text("%f", effects[index].life);
+			const auto text = "{}"_format(effects[index].life);
+			ImGui::TextUnformatted(text.c_str());
 		}
 	}
 
