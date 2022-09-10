@@ -484,7 +484,7 @@ struct HapticsEffect
 };
 
 
-void print_haptics_effects(int q)
+void print_haptics_effects(unsigned int q)
 {
 	bool first = true;
 	std::cout << "haptics supported: ";
