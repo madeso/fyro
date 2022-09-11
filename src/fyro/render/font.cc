@@ -52,16 +52,12 @@ namespace render
 //           stbtt_GetCodepointKernAdvance()
 */
 
-#define ALT_FONT
+
 
 struct FontImpl
 {
  	// ASCII 32..126 is 95 glyphs
-#ifdef ALT_FONT
 	stbtt_packedchar packed_char[96]; stbtt_bakedchar cdata[96];
-#else
-	stbtt_bakedchar cdata[96];
-#endif
 	std::unique_ptr<Texture> texture;
 	float original_height;
 
@@ -77,7 +73,6 @@ struct FontImpl
 
 		unsigned char temp_bitmap[512 * 512];
 
-#ifdef ALT_FONT
 		stbtt_pack_context context;
 		if (0 == stbtt_PackBegin(&context, temp_bitmap, texture_width, texture_height, 0, 0, nullptr)) { throw "failed to begin packing"; }
 		
@@ -88,16 +83,6 @@ struct FontImpl
 		stbtt_PackFontRange(&context, ttf_buffer, 0, text_height, 32, 95, packed_char);
 
 		stbtt_PackEnd(&context);
-#else
-		const auto bake_result = stbtt_BakeFontBitmap(ttf_buffer, 0, text_height, temp_bitmap, texture_width, texture_height, 32, 96, cdata);
-		std::cout << "font baking: " << bake_result << "\n";
-
-		if (bake_result == 0)
-		{
-			std::cout << "failed to bake\n";
-			return;
-		}
-#endif
 		std::vector<unsigned char> pixel_data;
 		pixel_data.resize(512 * 512 * 4);
 		for (std::size_t y = 0; y < 512; y += 1)
@@ -112,14 +97,6 @@ struct FontImpl
 		}
 		texture = std::make_unique<Texture>(pixel_data.data(), texture_width, texture_height, TextureEdge::clamp, TextureRenderStyle::pixel, Transparency::include);
 		original_height = text_height;
-		/*
-		glGenTextures(1, &ftex);
-		glBindTexture(GL_TEXTURE_2D, ftex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512,
-			0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
-		// can free temp_bitmap at this point
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		*/
 	}
 
 	void print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text)
@@ -132,12 +109,6 @@ struct FontImpl
 		{
 			if (c >= 32)// && *text < 128)
 			{
-				// Character advance/positioning
-				//   stbtt_GetCodepointHMetrics()
-				//   stbtt_GetFontVMetrics()
-				//   stbtt_GetFontVMetricsOS2()
-				//   stbtt_GetCodepointKernAdvance()
-#ifdef ALT_FONT
 				stbtt_aligned_quad q;
 				auto gpc = [scale](const stbtt_packedchar *chardata, int pw, int ph, int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int align_to_integer)
 				{
@@ -168,7 +139,6 @@ struct FontImpl
 				};
 				//stbtt_GetPackedQuad(packed_char, 512, 512, c-32, &xx, &yy, &q, 0);
 				gpc(packed_char, 512, 512, c-32, &xx, &yy, &q, 1);
-				// const auto height = q.t1 - q.t0;
 				batch->quad
 				(
 					texture.get(),
@@ -177,41 +147,6 @@ struct FontImpl
 					Vertex2{{q.x1, q.y1, 0.0f}, color, {q.s1, q.t1}},
 					Vertex2{{q.x0, q.y1, 0.0f}, color, {q.s0, q.t1}}
 				);
-#else
-				stbtt_aligned_quad q;
-				auto gbq = [](const stbtt_bakedchar *chardata, int pw, int ph, int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int opengl_fillrule)
-				{
-					float d3d_bias = opengl_fillrule ? 0 : -0.5f;
-					float ipw = 1.0f / static_cast<float>(pw), iph = 1.0f / static_cast<float>(ph);
-					const stbtt_bakedchar *b = chardata + char_index;
-					float round_x = static_cast<float>(static_cast<int>((*xpos + b->xoff) + 0.5f));
-					float round_y = static_cast<float>(static_cast<int>((*ypos + b->yoff) + 0.5f));
-
-					q->x0 = round_x + d3d_bias;
-					q->y0 = round_y + d3d_bias;
-					q->x1 = round_x + b->x1 - b->x0 + d3d_bias;
-					q->y1 = round_y + b->y1 - b->y0 + d3d_bias;
-
-					q->s0 = b->x0 * ipw;
-					q->t0 = b->y0 * iph;
-					q->s1 = b->x1 * ipw;
-					q->t1 = b->y1 * iph;
-
-					*xpos += b->xadvance;
-				};
-				// stbtt_GetBakedQuad(cdata, texture->width, texture->height, c-32, &x,&y,&q,0);//1=opengl & d3d10+,0=d3d9
-				const auto oy = yy;
-				gbq(cdata, texture->width, texture->height, c-32, &xx,&yy,&q,0);//1=opengl & d3d10+,0=d3d9
-				auto flip = [&](float y) -> float { return oy - (oy-y);  };
-				batch->quad
-				(
-					texture.get(),
-					Vertex2{{q.x0, flip(q.y0), 0.0f}, color, {q.s0, q.t0}},
-					Vertex2{{q.x1, flip(q.y0), 0.0f}, color, {q.s1, q.t0}},
-					Vertex2{{q.x1, flip(q.y1), 0.0f}, color, {q.s1, q.t1}},
-					Vertex2{{q.x0, flip(q.y1), 0.0f}, color, {q.s0, q.t1}}
-				);
-#endif
 			}
 		}
 	}
