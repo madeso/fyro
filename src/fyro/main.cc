@@ -1106,13 +1106,13 @@ struct ExampleGame : public Game
 			{
 				auto font = ah.require_native<ScriptFont>();
 				const auto height = static_cast<float>(ah.require_float());
-				auto color = ah.require_native<Rgb>();
+				// auto color = ah.require_native<Rgb>();
 				const auto x = static_cast<float>(ah.require_float());
 				const auto y = static_cast<float>(ah.require_float());
-				const auto text = ah.require_string();
+				//const auto text = ah.require_string();
+				const auto script_commands = ah.require_array();
 
 				ah.complete();
-				if(color == nullptr) { return nullptr; }
 				if(font == nullptr) { return nullptr; }
 
 				auto data = r.data;
@@ -1120,7 +1120,22 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				font->font->print(layer.batch, height, {color->r, color->g, color->b, 1.0f}, x, y, text);
+
+				std::vector<render::TextCommand> commands;
+				for(auto& obj: script_commands->values)
+				{
+					if(auto color = lox::as_native<Rgb>(obj); color)
+					{
+						commands.emplace_back(glm::vec4{color->r, color->g, color->b, 1.0f});
+					}
+					else
+					{
+						const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
+						commands.emplace_back(str);
+					}
+					
+				}
+				font->font->print(layer.batch, height, x, y, commands);
 				
 				return lox::make_nil();
 			})

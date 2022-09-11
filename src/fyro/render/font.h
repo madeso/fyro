@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <variant>
 
 namespace render
 {
@@ -9,6 +10,7 @@ namespace render
 struct FontImpl;
 struct SpriteBatch;
 
+using TextCommand = std::variant<std::string, glm::vec4>;
 
 struct Font
 {
@@ -17,7 +19,7 @@ struct Font
 
 	std::unique_ptr<FontImpl> impl;
 	
-	void print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text);
+	void print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text);
 	void imgui();
 };
 

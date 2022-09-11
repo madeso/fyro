@@ -58,7 +58,7 @@ class GameState
 		}
 
 		var white = new fyro.Rgb(1, 1, 1);
-		cmd.text(font, 15, white, 30, 30, "hello world");
+		cmd.text(font, 15, 30, 30, [white, "hello ", red, "world", white, "!"]);
 	}
 }
 

@@ -90,6 +90,17 @@ struct TextPrinter
 		*xpos += b->xadvance * scale;
 	}
 
+	void print_string(const glm::vec4& color, const std::string& text)
+	{
+		for(auto c: text)
+		{
+			if (c >= 32)// && *text < 128)
+			{
+				print_single_char(color, c);
+			}
+		}
+	}
+
 	void print_single_char(const glm::vec4& color, char c)
 	{
 		stbtt_aligned_quad q;
@@ -105,6 +116,9 @@ struct TextPrinter
 		);
 	}
 };
+
+
+template<class> inline constexpr bool always_false_v = false;
 
 struct FontImpl
 {
@@ -166,9 +180,9 @@ struct FontImpl
 		return true;
 	}
 
-	void print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text)
+	void print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text)
 	{
-		// const auto color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+		auto color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 		const float scale = height / original_height;
 
 		auto printer = TextPrinter
@@ -184,10 +198,22 @@ struct FontImpl
 
 		for(auto c: text)
 		{
-			if (c >= 32)// && *text < 128)
+			std::visit([&printer, &color](auto&& arg)
 			{
-				printer.print_single_char(color, c);
-			}
+				using T = std::decay_t<decltype(arg)>;
+				if constexpr (std::is_same_v<T, glm::vec4>)
+				{
+					color = arg;
+				}
+				else if constexpr (std::is_same_v<T, std::string>)
+				{
+					printer.print_string(color, arg);
+				}
+				else 
+				{
+					static_assert(always_false_v<T>, "non-exhaustive visitor!");
+				}
+			}, c);
 		}
 	}
 };
@@ -202,9 +228,9 @@ Font::Font(const unsigned char* ttf_buffer, float text_height)
 
 Font::~Font() = default;
 
-void Font::print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text)
+void Font::print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text)
 {
-	impl->print(batch, height, color, x, y, text);
+	impl->print(batch, height, x, y, text);
 }
 
 void Font::imgui()
