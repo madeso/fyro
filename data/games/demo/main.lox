@@ -1,4 +1,4 @@
-var font = new fyro.Font("roboto.ttf", 60);
+var font = fyro.load_font("roboto.ttf", 60);
 
 class GameState
 {
@@ -48,7 +48,16 @@ class GameState
 		var background = new fyro.Rgb(0.6, 0.6, 0.6);
 		cmd.clear(background);
 
-		var white = new fyro.Rgb(1, 0, 0);
+		var red = new fyro.Rgb(1, 0, 0);
+		cmd.rect(red, this.p1x, this.p1y, 50, 50);
+
+		if(this.p2)
+		{
+			var blue = new fyro.Rgb(0, 0, 1);
+			cmd.rect(blue, this.p2x, this.p2y, 50, 50);
+		}
+
+		var white = new fyro.Rgb(1, 1, 1);
 		cmd.text(font, 15, white, 30, 30, "hello world");
 	}
 }

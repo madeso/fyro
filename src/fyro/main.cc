@@ -1125,17 +1125,17 @@ struct ExampleGame : public Game
 				return lox::make_nil();
 			})
 			;
-		fyro->define_native_class<ScriptFont>
-			("Font", [this](lox::ArgumentHelper& ah) -> ScriptFont
-			{
-				const auto path = ah.require_string();
-				const auto size = static_cast<float>(ah.require_float());
-				ah.complete();
-				ScriptFont r;
-				r.setup(path, size);
-				loaded_fonts.emplace_back(r.font);
-				return r;
-			});
+		fyro->define_native_class<ScriptFont>("Font");
+		fyro->define_native_function("load_font", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			const auto size = ah.require_int();
+			ah.complete();
+			ScriptFont r;
+			r.setup(path, static_cast<float>(size));
+			loaded_fonts.emplace_back(r.font);
+			return lox.make_native(r);
+		});
 		fyro->define_native_class<ScriptPlayer>("Player")
 			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); })
 			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); })
