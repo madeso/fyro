@@ -17,7 +17,7 @@ struct Font
 
 	std::unique_ptr<FontImpl> impl;
 	
-	void print(SpriteBatch* batch, const glm::vec4& color, float x, float y, const std::string& text);
+	void print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text);
 	void imgui();
 };
 

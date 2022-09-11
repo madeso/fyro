@@ -1105,6 +1105,7 @@ struct ExampleGame : public Game
 			.add_function("text", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto font = ah.require_native<ScriptFont>();
+				const auto height = static_cast<float>(ah.require_float());
 				auto color = ah.require_native<Rgb>();
 				const auto x = static_cast<float>(ah.require_float());
 				const auto y = static_cast<float>(ah.require_float());
@@ -1119,7 +1120,7 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				font->font->print(layer.batch, {color->r, color->g, color->b, 1.0f}, x, y, text);
+				font->font->print(layer.batch, height, {color->r, color->g, color->b, 1.0f}, x, y, text);
 				
 				return lox::make_nil();
 			})
