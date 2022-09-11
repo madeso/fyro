@@ -52,7 +52,59 @@ namespace render
 //           stbtt_GetCodepointKernAdvance()
 */
 
+struct TextPrinter
+{
+	float xx; float yy;
+	float scale;
+	Texture* texture;
+	SpriteBatch* batch;
+	stbtt_packedchar* packedchar;
+	int pw;
+	int ph;
 
+	void get_packed_quad(int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int align_to_integer)
+	{
+		float ipw = 1.0f / static_cast<float>(pw);
+		float iph = 1.0f / static_cast<float>(ph);
+		const stbtt_packedchar *b = packedchar + char_index;
+
+		if (align_to_integer) {
+			float x = *xpos; // (float) STBTT_ifloor((*xpos + b->xoff) + 0.5f);
+			float y = *ypos; // (float) STBTT_ifloor((*ypos + b->yoff) + 0.5f);
+			q->x0 = x;
+			q->y0 = y;
+			q->x1 = x + (b->xoff2 - b->xoff) * scale;
+			q->y1 = y + (b->yoff2 - b->yoff) * scale;
+		} else {
+			q->x0 = *xpos + (b->xoff) * scale;
+			q->y0 = *ypos + (b->yoff) * scale;
+			q->x1 = *xpos + (b->xoff2) * scale;
+			q->y1 = *ypos + (b->yoff2) * scale;
+		}
+
+		q->s0 = b->x0 * static_cast<float>(ipw);
+		q->t1 = b->y0 * static_cast<float>(iph);
+		q->s1 = b->x1 * static_cast<float>(ipw);
+		q->t0 = b->y1 * static_cast<float>(iph);
+
+		*xpos += b->xadvance * scale;
+	}
+
+	void print_single_char(const glm::vec4& color, char c)
+	{
+		stbtt_aligned_quad q;
+		//stbtt_GetPackedQuad(packed_char, 512, 512, c-32, &xx, &yy, &q, 0);
+		get_packed_quad(c-32, &xx, &yy, &q, 1);
+		batch->quad
+		(
+			texture,
+			Vertex2{{q.x0, q.y0, 0.0f}, color, {q.s0, q.t0}},
+			Vertex2{{q.x1, q.y0, 0.0f}, color, {q.s1, q.t0}},
+			Vertex2{{q.x1, q.y1, 0.0f}, color, {q.s1, q.t1}},
+			Vertex2{{q.x0, q.y1, 0.0f}, color, {q.s0, q.t1}}
+		);
+	}
+};
 
 struct FontImpl
 {
@@ -60,93 +112,81 @@ struct FontImpl
 	stbtt_packedchar packed_char[96]; stbtt_bakedchar cdata[96];
 	std::unique_ptr<Texture> texture;
 	float original_height;
+	int image_width;
+	int image_height;
 
 	void imgui()
 	{
 		ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->id)), ImVec2{300.0f, 300.0f});
 	}
 
-	void init(const unsigned char* ttf_buffer, float text_height)
+	bool init(const unsigned char* ttf_buffer, float text_height)
 	{
 		int texture_width = 512;
 		int texture_height = 512;
 
-		unsigned char temp_bitmap[512 * 512];
-
-		stbtt_pack_context context;
-		if (0 == stbtt_PackBegin(&context, temp_bitmap, texture_width, texture_height, 0, 0, nullptr)) { throw "failed to begin packing"; }
-		
 		// If skip=0, then codepoints without a glyph recived the font's "missing character" glyph, typically an empty box by convention.
 		const int skip = 0;
-		stbtt_PackSetSkipMissingCodepoints(&context, skip);
 
-		stbtt_PackFontRange(&context, ttf_buffer, 0, text_height, 32, 95, packed_char);
+		std::vector<unsigned char> alpha_only_pixels;
+		alpha_only_pixels.resize(static_cast<std::size_t>(texture_width * texture_height));
 
-		stbtt_PackEnd(&context);
-		std::vector<unsigned char> pixel_data;
-		pixel_data.resize(512 * 512 * 4);
-		for (std::size_t y = 0; y < 512; y += 1)
-		for (std::size_t x = 0; x < 512; x += 1)
 		{
-			const auto c = temp_bitmap[512 * y + x];
-			const auto i = (512 * y + x) * 4;
-			pixel_data[i + 0] = 255;
-			pixel_data[i + 1] = 255;
-			pixel_data[i + 2] = 255;
-			pixel_data[i + 3] = c;
+			stbtt_pack_context context;
+			const auto begin_status = stbtt_PackBegin(&context, alpha_only_pixels.data(), texture_width, texture_height, 0, 0, nullptr);
+			if (0 == begin_status) { return false; }
+			
+			stbtt_PackSetSkipMissingCodepoints(&context, skip);
+			const auto packed_status = stbtt_PackFontRange(&context, ttf_buffer, 0, text_height, 32, 95, packed_char);
+			stbtt_PackEnd(&context);
+
+			if(packed_status != 0) { return false; }
 		}
-		texture = std::make_unique<Texture>(pixel_data.data(), texture_width, texture_height, TextureEdge::clamp, TextureRenderStyle::pixel, Transparency::include);
-		original_height = text_height;
+
+		std::vector<unsigned char> rgba_pixels;
+		rgba_pixels.resize(static_cast<std::size_t>(texture_width * texture_height * 4));
+		for (std::size_t y = 0; y < static_cast<std::size_t>(texture_height); y += 1)
+		{
+			for (std::size_t x = 0; x < static_cast<std::size_t>(texture_width); x += 1)
+			{
+				const auto c = alpha_only_pixels[static_cast<std::size_t>(texture_width) * y + x];
+				const auto i = (static_cast<std::size_t>(texture_width) * y + x) * 4;
+				rgba_pixels[i + 0] = 255;
+				rgba_pixels[i + 1] = 255;
+				rgba_pixels[i + 2] = 255;
+				rgba_pixels[i + 3] = c;
+			}
+		}
+
+		this->texture = std::make_unique<Texture>(rgba_pixels.data(), texture_width, texture_height, TextureEdge::clamp, TextureRenderStyle::pixel, Transparency::include);
+		this->original_height = text_height;
+		this->image_width = texture_width;
+		this->image_height = texture_height;
+
+		return true;
 	}
 
 	void print(SpriteBatch* batch, float height, const glm::vec4& color, float x, float y, const std::string& text)
 	{
-		float xx = x;
-		float yy = y;
 		// const auto color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 		const float scale = height / original_height;
+
+		auto printer = TextPrinter
+		{
+			x, y,
+			scale,
+			texture.get(),
+			batch,
+			packed_char,
+			image_width,
+			image_height
+		};
+
 		for(auto c: text)
 		{
 			if (c >= 32)// && *text < 128)
 			{
-				stbtt_aligned_quad q;
-				auto gpc = [scale](const stbtt_packedchar *chardata, int pw, int ph, int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int align_to_integer)
-				{
-					float ipw = 1.0f / static_cast<float>(pw);
-					float iph = 1.0f / static_cast<float>(ph);
-					const stbtt_packedchar *b = chardata + char_index;
-
-					if (align_to_integer) {
-						float x = *xpos; // (float) STBTT_ifloor((*xpos + b->xoff) + 0.5f);
-						float y = *ypos; // (float) STBTT_ifloor((*ypos + b->yoff) + 0.5f);
-						q->x0 = x;
-						q->y0 = y;
-						q->x1 = x + (b->xoff2 - b->xoff) * scale;
-						q->y1 = y + (b->yoff2 - b->yoff) * scale;
-					} else {
-						q->x0 = *xpos + (b->xoff) * scale;
-						q->y0 = *ypos + (b->yoff) * scale;
-						q->x1 = *xpos + (b->xoff2) * scale;
-						q->y1 = *ypos + (b->yoff2) * scale;
-					}
-
-					q->s0 = b->x0 * static_cast<float>(ipw);
-					q->t1 = b->y0 * static_cast<float>(iph);
-					q->s1 = b->x1 * static_cast<float>(ipw);
-					q->t0 = b->y1 * static_cast<float>(iph);
-
-					*xpos += b->xadvance * scale;
-				};
-				//stbtt_GetPackedQuad(packed_char, 512, 512, c-32, &xx, &yy, &q, 0);
-				gpc(packed_char, 512, 512, c-32, &xx, &yy, &q, 1);
-				batch->quad
-				(
-					texture.get(),
-					Vertex2{{q.x0, q.y0, 0.0f}, color, {q.s0, q.t0}},
-					Vertex2{{q.x1, q.y0, 0.0f}, color, {q.s1, q.t0}},
-					Vertex2{{q.x1, q.y1, 0.0f}, color, {q.s1, q.t1}},
-					Vertex2{{q.x0, q.y1, 0.0f}, color, {q.s0, q.t1}}
-				);
+				printer.print_single_char(color, c);
 			}
 		}
 	}
