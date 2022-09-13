@@ -82,10 +82,10 @@ struct TextPrinter
 			q->y1 = *ypos + (b->yoff2) * scale;
 		}
 
-		q->s0 = b->x0 * static_cast<float>(ipw);
-		q->t1 = b->y0 * static_cast<float>(iph);
-		q->s1 = b->x1 * static_cast<float>(ipw);
-		q->t0 = b->y1 * static_cast<float>(iph);
+		q->s0 = b->x0 * ipw;
+		q->t1 = b->y0 * iph;
+		q->s1 = b->x1 * ipw;
+		q->t0 = b->y1 * iph;
 
 		*xpos += b->xadvance * scale;
 	}
