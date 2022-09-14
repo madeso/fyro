@@ -145,7 +145,7 @@ bind_texture(const Uniform& uniform, const Texture& texture)
 
 
 Texture
-LoadImage
+load_image_from_bytes
 (
 	const unsigned char* image_source,
 	int size,
@@ -194,7 +194,7 @@ load_image_from_embedded
 	Transparency t
 )
 {
-	return LoadImage
+	return load_image_from_bytes
 	(
 		reinterpret_cast<const unsigned char*>(image_binary.data),
 		Cunsigned_int_to_int(image_binary.size),

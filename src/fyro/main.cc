@@ -4,14 +4,16 @@
 #include <optional>
 #include <random>
 
-#include "fyro/render/font.h"
-
 #include <nlohmann/json.hpp>
 #include "physfs.h"
 
-#include "fyro/fyro.h"
 #include "lox/lox.h"
 #include "lox/printhandler.h"
+
+#include "fyro/fyro.h"
+#include "fyro/render/font.h"
+#include "fyro/render/texture.h"
+
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -981,6 +983,32 @@ struct ScriptFont
 	}
 };
 
+std::shared_ptr<render::Texture>
+load_texture(const std::string& path)
+{
+	const auto bytes = read_file_to_bytes(path);
+	return std::make_shared<render::Texture>
+	(
+		render::load_image_from_bytes
+		(
+			reinterpret_cast<const unsigned char*>(bytes.data()),
+			static_cast<int>(bytes.size()),
+			render::TextureEdge::repeat,
+			render::TextureRenderStyle::pixel,
+			render::Transparency::include
+		)
+	);
+}
+
+struct ScriptTexture
+{
+	ScriptTexture() : screen(1.0f, 1.0f)
+	{
+	}
+	std::shared_ptr<render::Texture> texture;
+	Rectf screen;
+};
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -1139,6 +1167,29 @@ struct ExampleGame : public Game
 				
 				return lox::make_nil();
 			})
+			.add_function("sprite", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto texture = ah.require_native<ScriptTexture>();
+				// auto color = ah.require_native<Rgb>();
+				const auto x = static_cast<float>(ah.require_float());
+				const auto y = static_cast<float>(ah.require_float());
+
+				ah.complete();
+				if(texture == nullptr) { return nullptr; }
+
+				auto data = r.data;
+				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
+				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
+				
+				render::RenderLayer2& layer = *data->layer;
+
+				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
+				const auto tint = glm::vec4(1.0f);
+				const auto screen = Rectf{texture->screen}.translate(x, y);
+				layer.batch->quad(texture->texture.get(), screen, Rectf{1.0f, 1.0f}, tint);
+				
+				return lox::make_nil();
+			})
 			;
 		fyro->define_native_class<ScriptFont>("Font");
 		fyro->define_native_function("load_font", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -1149,6 +1200,33 @@ struct ExampleGame : public Game
 			ScriptFont r;
 			r.setup(path, static_cast<float>(size));
 			loaded_fonts.emplace_back(r.font);
+			return lox.make_native(r);
+		});
+		fyro->define_native_class<ScriptTexture>("Image")
+			.add_function("set_size", [](ScriptTexture& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto width = static_cast<float>(ah.require_float());
+				const auto height = static_cast<float>(ah.require_float());
+				ah.complete();
+				t.screen = Rectf{width, height}.set_bottom_left(t.screen.left, t.screen.bottom);
+				return lox::make_nil();
+			})
+			.add_function("align", [](ScriptTexture& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto x = static_cast<float>(ah.require_float());
+				const auto y = static_cast<float>(ah.require_float());
+				ah.complete();
+				t.screen = t.screen.set_bottom_left( -t.screen.get_width() * x, -t.screen.get_height()*y );
+				return lox::make_nil();
+			})
+			;
+		fyro->define_native_function("load_image", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			ah.complete();
+			ScriptTexture r;
+			r.texture = load_texture(path);
+			r.screen = Rectf{static_cast<float>(r.texture->width), static_cast<float>(r.texture->height)};
 			return lox.make_native(r);
 		});
 		fyro->define_native_class<ScriptPlayer>("Player")

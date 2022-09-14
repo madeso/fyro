@@ -1,4 +1,7 @@
 var font = fyro.load_font("roboto.ttf", 60);
+var letter = fyro.load_image("letter_g.png");
+letter.set_size(30, 30);
+letter.align(0.5, 0.5);
 
 class GameState
 {
@@ -50,6 +53,7 @@ class GameState
 
 		var red = new fyro.Rgb(1, 0, 0);
 		cmd.rect(red, this.p1x, this.p1y, 50, 50);
+		cmd.sprite(letter, this.p1x, this.p1y);
 
 		if(this.p2)
 		{

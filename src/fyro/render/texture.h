@@ -62,6 +62,17 @@ struct Texture
 void
 bind_texture(const Uniform& uniform, const Texture& texture);
 
+
+Texture
+load_image_from_bytes
+(
+	const unsigned char* image_source,
+	int size,
+	TextureEdge te,
+	TextureRenderStyle trs,
+	Transparency t
+);
+
 Texture
 load_image_from_embedded
 (
