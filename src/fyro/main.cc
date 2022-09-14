@@ -1009,6 +1009,34 @@ struct ScriptTexture
 	Rectf screen;
 };
 
+template<typename TSource, typename TData>
+struct Cache
+{
+	using Loader = std::function<std::shared_ptr<TData>(const TSource&)>;
+	
+	Loader load;
+	std::unordered_map<TSource, std::weak_ptr<TData>> loaded;
+
+	explicit Cache(Loader&& l) : load(l) {}
+
+	std::shared_ptr<TData> get(const TSource& source)
+	{
+		if(auto found = loaded.find(source); found != loaded.end())
+		{
+			auto ret = found->second.lock();
+			if(ret != nullptr)
+			{
+				return ret;
+			}
+		}
+
+		auto ret = load(source);
+		assert(ret != nullptr);
+		loaded[source] = ret;
+		return ret;
+	}
+};
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -1018,12 +1046,18 @@ struct ExampleGame : public Game
 
 	std::unique_ptr<State> next_state;
 	std::unique_ptr<State> state;
-	std::vector<std::shared_ptr<render::Font>> loaded_fonts;
+
+	std::vector<std::shared_ptr<render::Font>> loaded_fonts; // todo(Gustav): replace with cache
+	Cache<std::string, render::Texture> texture_cache;
 
 	ExampleGame()
 		: lox(std::make_unique<PrintLoxError>(), [](const std::string& str)
 		{
 			std::cout << str << "\n";
+		})
+		, texture_cache([](const std::string& path)
+		{
+			return load_texture(path);
 		})
 	{
 		// todo(Gustav): read/write to json and provide ui for adding new mappings
@@ -1225,7 +1259,7 @@ struct ExampleGame : public Game
 			const auto path = ah.require_string();
 			ah.complete();
 			ScriptTexture r;
-			r.texture = load_texture(path);
+			r.texture = texture_cache.get(path);
 			r.screen = Rectf{static_cast<float>(r.texture->width), static_cast<float>(r.texture->height)};
 			return lox.make_native(r);
 		});
