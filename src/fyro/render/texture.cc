@@ -72,10 +72,10 @@ Texture::Texture
 		(
 			GL_TEXTURE_2D,
 			0,
-			t==Transparency::only_alpha? GL_ALPHA : (include_transparency ? GL_RGBA : GL_RGB),
+			include_transparency ? GL_RGBA : GL_RGB,
 			width, height,
 			0,
-			t==Transparency::only_alpha? GL_ALPHA : (include_transparency ? GL_RGBA : GL_RGB),
+			include_transparency ? GL_RGBA : GL_RGB,
 			GL_UNSIGNED_BYTE,
 			pixel_data
 		);
