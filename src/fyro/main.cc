@@ -1000,13 +1000,18 @@ load_texture(const std::string& path)
 	);
 }
 
-struct ScriptTexture
+struct Sprite
 {
-	ScriptTexture() : screen(1.0f, 1.0f)
+	Sprite() : screen(1.0f, 1.0f)
 	{
 	}
 	std::shared_ptr<render::Texture> texture;
 	Rectf screen;
+};
+
+struct ScriptSprite
+{
+	std::vector<Sprite> sprites;
 };
 
 template<typename TSource, typename TData>
@@ -1203,7 +1208,7 @@ struct ExampleGame : public Game
 			})
 			.add_function("sprite", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto texture = ah.require_native<ScriptTexture>();
+				auto texture = ah.require_native<ScriptSprite>();
 				// auto color = ah.require_native<Rgb>();
 				const auto x = static_cast<float>(ah.require_float());
 				const auto y = static_cast<float>(ah.require_float());
@@ -1216,11 +1221,12 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
+				Sprite& sprite = texture->sprites[0]; // todo(Gustav): select current sprite better
 
 				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
 				const auto tint = glm::vec4(1.0f);
-				const auto screen = Rectf{texture->screen}.translate(x, y);
-				layer.batch->quad(texture->texture.get(), screen, Rectf{1.0f, 1.0f}, tint);
+				const auto screen = Rectf{sprite.screen}.translate(x, y);
+				layer.batch->quad(sprite.texture.get(), screen, Rectf{1.0f, 1.0f}, tint);
 				
 				return lox::make_nil();
 			})
@@ -1236,21 +1242,27 @@ struct ExampleGame : public Game
 			loaded_fonts.emplace_back(r.font);
 			return lox.make_native(r);
 		});
-		fyro->define_native_class<ScriptTexture>("Image")
-			.add_function("set_size", [](ScriptTexture& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		fyro->define_native_class<ScriptSprite>("Sprite")
+			.add_function("set_size", [](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				const auto width = static_cast<float>(ah.require_float());
 				const auto height = static_cast<float>(ah.require_float());
 				ah.complete();
-				t.screen = Rectf{width, height}.set_bottom_left(t.screen.left, t.screen.bottom);
+				for(auto& s: t.sprites)
+				{
+					s.screen = Rectf{width, height}.set_bottom_left(s.screen.left, s.screen.bottom);
+				}
 				return lox::make_nil();
 			})
-			.add_function("align", [](ScriptTexture& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			.add_function("align", [](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				const auto x = static_cast<float>(ah.require_float());
 				const auto y = static_cast<float>(ah.require_float());
 				ah.complete();
-				t.screen = t.screen.set_bottom_left( -t.screen.get_width() * x, -t.screen.get_height()*y );
+				for(auto& s: t.sprites)
+				{
+					s.screen = s.screen.set_bottom_left( -s.screen.get_width() * x, -s.screen.get_height()*y );
+				}
 				return lox::make_nil();
 			})
 			;
@@ -1258,9 +1270,11 @@ struct ExampleGame : public Game
 		{
 			const auto path = ah.require_string();
 			ah.complete();
-			ScriptTexture r;
-			r.texture = texture_cache.get(path);
-			r.screen = Rectf{static_cast<float>(r.texture->width), static_cast<float>(r.texture->height)};
+			ScriptSprite r;
+			Sprite s;
+			s.texture = texture_cache.get(path);
+			s.screen = Rectf{static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)};
+			r.sprites.emplace_back(s);
 			return lox.make_native(r);
 		});
 		fyro->define_native_class<ScriptPlayer>("Player")
