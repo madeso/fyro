@@ -1060,11 +1060,14 @@ load_texture(const std::string& path)
 
 struct Sprite
 {
-	Sprite() : screen(1.0f, 1.0f)
+	Sprite()
+		: screen(1.0f, 1.0f)
+		, uv(1.0f, 1.0f)
 	{
 	}
 	std::shared_ptr<render::Texture> texture;
 	Rectf screen;
+	Rectf uv;
 };
 
 struct ScriptSprite
@@ -1284,7 +1287,7 @@ struct ExampleGame : public Game
 				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
 				const auto tint = glm::vec4(1.0f);
 				const auto screen = Rectf{sprite.screen}.translate(x, y);
-				layer.batch->quad(sprite.texture.get(), screen, Rectf{1.0f, 1.0f}, tint);
+				layer.batch->quad(sprite.texture.get(), screen, sprite.uv, tint);
 				
 				return lox::make_nil();
 			})
@@ -1332,6 +1335,26 @@ struct ExampleGame : public Game
 			Sprite s;
 			s.texture = texture_cache.get(path);
 			s.screen = Rectf{static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)};
+			r.sprites.emplace_back(s);
+			return lox.make_native(r);
+		});
+		fyro->define_native_function("load_sprite", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			const auto tiles_width = ah.require_int();
+			const auto tiles_height = ah.require_int();
+			ah.complete();
+
+			const auto tw = static_cast<float>(tiles_width);
+			const auto th = static_cast<float>(tiles_height);
+
+			ScriptSprite r;
+			Sprite s;
+			s.texture = texture_cache.get(path);
+			const auto iw = static_cast<float>(s.texture->width);
+			const auto ih = static_cast<float>(s.texture->height);
+			s.screen = Rectf{iw, ih};
+			s.uv = Rectf{(iw/tw) / iw, (ih/th) / ih};
 			r.sprites.emplace_back(s);
 			return lox.make_native(r);
 		});
