@@ -92,13 +92,12 @@ std::vector<std::string> physfs_files_in_dir(const std::string& dir)
 	return r;
 }
 
-std::vector<char> read_file_to_bytes(const std::string& path)
+std::optional<std::vector<char>> read_file_to_bytes_or_none(const std::string& path)
 {
 	auto* file = PHYSFS_openRead(path.c_str());
 	if(file == nullptr)
 	{
-		// todo(Gustav): split path and find files in dir
-		throw physfs_exception("unable to open file").append("found files").append(physfs_files_in_dir(""));
+		return std::nullopt;
 	}
 
 	std::vector<char> ret;
@@ -120,18 +119,65 @@ std::vector<char> read_file_to_bytes(const std::string& path)
 }
 
 
-std::string read_file_to_string(const std::string& path)
+Exception missing_file_exception(const std::string& /*path*/)
 {
-	auto ret = read_file_to_bytes(path);
-	ret.emplace_back('\0');
-	return ret.data();
+	// todo(Gustav): split path and find files in dir
+	return physfs_exception("unable to open file")
+		.append("found files")
+		.append(physfs_files_in_dir(""))
+		;
 }
 
 
-json load_json(const std::string& path)
+std::vector<char> read_file_to_bytes(const std::string& path)
 {
-	const auto src = read_file_to_string(path);
-	return json::parse(src);
+	if(auto ret = read_file_to_bytes_or_none(path))
+	{
+		return *ret;
+	}
+	else
+	{
+		throw missing_file_exception(path);
+	}
+}
+
+
+std::optional<std::string> read_file_to_string_or_none(const std::string& path)
+{
+	if(auto ret = read_file_to_bytes_or_none(path))
+	{
+		ret->emplace_back('\0');
+		return ret->data();
+	}
+	else
+	{
+		return std::nullopt;
+	}
+}
+
+std::string read_file_to_string(const std::string& path)
+{
+	if(auto ret = read_file_to_string_or_none(path))
+	{
+		return *ret;
+	}
+	else
+	{
+		throw missing_file_exception(path);
+	}
+}
+
+
+std::optional<json> load_json_or_none(const std::string& path)
+{
+	if(const auto src = read_file_to_string_or_none(path))
+	{
+		return json::parse(*src);
+	}
+	else
+	{
+		return std::nullopt;
+	}
 }
 
 
@@ -142,17 +188,29 @@ struct GameData
 	int height = 600;
 };
 
-GameData load_game_data(const std::string& path)
+
+GameData load_game_data_or_default(const std::string& path)
 {
 	try
 	{
-		json data = load_json(path);
+		if(const auto loaded_data = load_json_or_none(path); loaded_data)
+		{
+			const auto& data = *loaded_data;
 
-		auto r = GameData{};
-		r.title  = data["title"] .get<std::string>();
-		r.width  = data["width"] .get<int>();
-		r.height = data["height"].get<int>();
-		return r;
+			auto r = GameData{};
+			r.title  = data["title"] .get<std::string>();
+			r.width  = data["width"] .get<int>();
+			r.height = data["height"].get<int>();
+			return r;
+		}
+		else
+		{
+			auto r = GameData{};
+			r.title  = "Example";
+			r.width  = 800;
+			r.height = 600;
+			return r;
+		}
 	}
 	catch(...)
 	{
@@ -1429,7 +1487,7 @@ int run(int argc, char** argv)
 		physfs.setup(PHYSFS_getBaseDir());
 	}
 
-	const auto data = load_game_data("main.json");
+	const auto data = load_game_data_or_default("main.json");
 
 	return run_game
 	(

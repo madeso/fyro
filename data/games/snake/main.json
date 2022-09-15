@@ -1,6 +1,5 @@
 {
 	"title": "Snake", 
 	"width": 800, 
-	"height": 600,
-	"fullscreen": false
+	"height": 600
 }
