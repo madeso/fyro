@@ -1,0 +1,43 @@
+var game_size = 200;
+var bkg_speed = 10;
+
+var bkg = fyro.load_image("assets/graphics/backgrounds/desert-background.png");
+bkg.set_size(game_size, game_size);
+
+
+class GameState
+{
+	public var p1x = game_size / 2.0;
+	public var p1y = game_size / 6.0;
+
+	public var bkg_y = 0;
+
+	public fun update(dt)
+	{
+		var speed = 30.0;
+
+		var player1 = fyro.get_input();
+		this.p1x += player1.current.axis_left_x * dt * speed;
+		this.p1y += player1.current.axis_left_y * dt * speed;
+
+		this.bkg_y -= dt * bkg_speed;
+		if(this.bkg_y < -game_size)
+		{
+			this.bkg_y += game_size;
+		}
+	}
+
+	public fun render(cmd)
+	{
+		cmd.windowbox(game_size, game_size);
+
+		// draw 2 bkg... this should hopefully clear the screen
+		cmd.sprite(bkg, 0, this.bkg_y + game_size);
+		cmd.sprite(bkg, 0, this.bkg_y);
+
+		var red = new fyro.Rgb(1, 0, 0);
+		cmd.rect(red, this.p1x, this.p1y, 50, 50);
+	}
+}
+
+fyro.set_state(new GameState());
