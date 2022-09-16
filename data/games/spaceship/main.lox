@@ -4,7 +4,10 @@ var bkg_speed = 10;
 var bkg = fyro.load_image("assets/graphics/backgrounds/desert-background.png");
 bkg.set_size(game_size, game_size);
 
-var player = fyro.load_sprite("assets/graphics/spritesheets/ship.png", 5, 2);
+var player = fyro.load_sprite("assets/graphics/spritesheets/ship.png", 5, 2, 0.25, [
+	new fyro.vec2i(2, 0),
+	new fyro.vec2i(2, 1)
+]);
 player.set_size(16, 24);
 player.align(0.5, 0.5);
 

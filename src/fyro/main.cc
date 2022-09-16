@@ -1070,9 +1070,51 @@ struct Sprite
 	Rectf uv;
 };
 
+struct SpriteAnimation
+{
+	float speed = 0.0f;
+	float accum = 0.0f;
+	int current_index = 0;
+	int total_sprites = 0;
+
+	void setup
+	(
+		float a_speed,
+		int a_total_sprites
+	)
+	{
+		speed = a_speed;
+		total_sprites = a_total_sprites;
+
+		// todo(Gustav): randomize!
+		// accum = make_random(...);
+		// current_index = make_random(...);
+	}
+
+	void update(float dt)
+	{
+		assert(total_sprites >= 0);
+		if(total_sprites == 0) { return; }
+
+		accum += dt;
+		while(accum > speed)
+		{
+			accum -= speed;
+			current_index += 1;
+			current_index = current_index % total_sprites;
+		}
+	}
+};
+
 struct ScriptSprite
 {
 	std::vector<Sprite> sprites;
+	std::shared_ptr<SpriteAnimation> animation; // may be shared between sprites
+
+	ScriptSprite()
+		: animation(std::make_shared<SpriteAnimation>())
+	{
+	}
 };
 
 template<typename TSource, typename TData>
@@ -1115,6 +1157,8 @@ struct ExampleGame : public Game
 
 	std::vector<std::shared_ptr<render::Font>> loaded_fonts; // todo(Gustav): replace with cache
 	Cache<std::string, render::Texture> texture_cache;
+
+	std::vector<std::shared_ptr<SpriteAnimation>> animations;
 
 	ExampleGame()
 		: lox(std::make_unique<PrintLoxError>(), [](const std::string& str)
@@ -1177,6 +1221,14 @@ struct ExampleGame : public Game
 			ah.complete();
 			return Rgb{r, g, b};
 		});
+
+		fyro->define_native_class<glm::ivec2>("vec2i", [](lox::ArgumentHelper& ah) -> glm::ivec2{
+			const auto x = ah.require_int();
+			const auto y = ah.require_int();
+			ah.complete();
+			return glm::ivec2{x, y};
+		})
+		;
 
 		// todo(Gustav): validate argumends and raise script error on invalid
 		fyro->define_native_class<RenderArg>("RenderCommand")
@@ -1267,7 +1319,7 @@ struct ExampleGame : public Game
 				
 				return lox::make_nil();
 			})
-			.add_function("sprite", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			.add_function("sprite", [this](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto texture = ah.require_native<ScriptSprite>();
 				// auto color = ah.require_native<Rgb>();
@@ -1282,7 +1334,9 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				Sprite& sprite = texture->sprites[0]; // todo(Gustav): select current sprite better
+				animations.emplace_back(texture->animation);
+				const auto animation_index = static_cast<std::size_t>(std::max(0, texture->animation->current_index));
+				Sprite& sprite = texture->sprites[animation_index];
 
 				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
 				const auto tint = glm::vec4(1.0f);
@@ -1340,22 +1394,56 @@ struct ExampleGame : public Game
 		});
 		fyro->define_native_function("load_sprite", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
+			auto to_vec2i_array = [](std::shared_ptr<lox::Array> src) -> std::vector<glm::ivec2>
+			{
+				if(src == nullptr) { return {}; }
+				std::vector<glm::ivec2> dst;
+				for(auto& v: src->values)
+				{
+					if(auto native = lox::as_native<glm::ivec2>(v); native)
+					{
+						dst.emplace_back(*native);
+					}
+					else
+					{
+						// todo(Gustav): expand lox so this is part of the argument handler eval
+						// todo(Gustav): add argument index here for better error handling
+						lox::raise_error("element in array is not a vec2i");
+					}
+				}
+				return dst;
+			};
 			const auto path = ah.require_string();
-			const auto tiles_width = ah.require_int();
-			const auto tiles_height = ah.require_int();
+			const auto tiles_per_x = static_cast<float>(ah.require_int());
+			const auto tiles_per_y = static_cast<float>(ah.require_int());
+			const auto anim_speed = static_cast<float>(ah.require_float());
+			const auto tiles_array = to_vec2i_array(ah.require_array());
 			ah.complete();
 
-			const auto tw = static_cast<float>(tiles_width);
-			const auto th = static_cast<float>(tiles_height);
+			if(tiles_array.empty())
+			{
+				lox::raise_error("sprite array was empty");
+			}
 
 			ScriptSprite r;
-			Sprite s;
-			s.texture = texture_cache.get(path);
-			const auto iw = static_cast<float>(s.texture->width);
-			const auto ih = static_cast<float>(s.texture->height);
-			s.screen = Rectf{iw, ih};
-			s.uv = Rectf{(iw/tw) / iw, (ih/th) / ih};
-			r.sprites.emplace_back(s);
+			r.animation->setup(anim_speed, static_cast<int>(tiles_array.size()));
+			for(const auto& tile: tiles_array)
+			{
+				Sprite s;
+				s.texture = texture_cache.get(path);
+				const auto iw = static_cast<float>(s.texture->width);
+				const auto ih = static_cast<float>(s.texture->height);
+				s.screen = Rectf{iw, ih};
+
+				const auto tile_pix_w = iw/tiles_per_x;
+				const auto tile_pix_h = ih/tiles_per_y;
+				const auto tile_frac_w = tile_pix_w / iw;
+				const auto tile_frac_h = tile_pix_h / ih;
+				const auto dx = tile_frac_w * static_cast<float>(tile.x);
+				const auto dy = tile_frac_h * static_cast<float>(tile.y);
+				s.uv = Rectf{tile_frac_w, tile_frac_h}.translate(dx, dy);
+				r.sprites.emplace_back(s);
+			}
 			return lox.make_native(r);
 		});
 		fyro->define_native_class<ScriptPlayer>("Player")
@@ -1418,6 +1506,12 @@ struct ExampleGame : public Game
 	{
 		input.update(dt);
 		input.start_new_frame();
+
+		for(auto& anim: animations)
+		{
+			anim->update(dt);
+		}
+
 		if(state)
 		{
 			state->update(dt);
@@ -1431,6 +1525,7 @@ struct ExampleGame : public Game
 	void
 	on_render(const render::RenderCommand& rc) override
 	{
+		animations.clear();
 		if(state)
 		{
 			state->render(rc);
