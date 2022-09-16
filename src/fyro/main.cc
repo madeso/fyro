@@ -1392,6 +1392,50 @@ struct ExampleGame : public Game
 			r.sprites.emplace_back(s);
 			return lox.make_native(r);
 		});
+		fyro->define_native_function("sync_sprite_animations", [](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			auto to_sprite_array = [](std::shared_ptr<lox::Array> src) -> std::vector<lox::NativeRef<ScriptSprite>>
+			{
+				if(src == nullptr) { return {}; }
+				std::vector<lox::NativeRef<ScriptSprite>> dst;
+				for(auto& v: src->values)
+				{
+					if(auto native = lox::as_native<ScriptSprite>(v); native)
+					{
+						dst.emplace_back(native);
+					}
+					else
+					{
+						// todo(Gustav): expand lox so this is part of the argument handler eval
+						// todo(Gustav): add argument index here for better error handling
+						lox::raise_error("element in array is not a Sprite");
+					}
+				}
+				return dst;
+			};
+			auto sprite_array = to_sprite_array(ah.require_array());
+			ah.complete();
+
+			std::shared_ptr<SpriteAnimation> main_animation;
+			for(auto& sp: sprite_array)
+			{
+				if(main_animation == nullptr)
+				{
+					main_animation = sp->animation;
+				}
+				else
+				{
+					// todo(Gustav): verify that animation has same number of frames!
+					if(sp->animation->total_sprites != main_animation->total_sprites)
+					{
+						lox::raise_error("unable to sync: sprite animations have different number of frames");
+					}
+					sp->animation = main_animation;
+				}
+			}
+
+			return lox::make_nil();
+		});
 		fyro->define_native_function("load_sprite", [this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
 			auto to_vec2i_array = [](std::shared_ptr<lox::Array> src) -> std::vector<glm::ivec2>

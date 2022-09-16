@@ -1,16 +1,45 @@
 var game_size = 200;
-var bkg_speed = 10;
+var bkg_speed = 30;
+
+var player_speed = 50.0;
+var anim_time_acc = 5;
+var anim_time_de = 5;
+var range_almost = 0.5;
+var range_most = 0.9;
 
 var bkg = fyro.load_image("assets/graphics/backgrounds/desert-background.png");
 bkg.set_size(game_size, game_size);
 
-var player = fyro.load_sprite("assets/graphics/spritesheets/ship.png", 5, 2, 0.25, [
-	new fyro.vec2i(2, 0),
-	new fyro.vec2i(2, 1)
-]);
-player.set_size(16, 24);
-player.align(0.5, 0.5);
+fun load_player(x)
+{
+	var player = fyro.load_sprite("assets/graphics/spritesheets/ship.png", 5, 2, 0.15, [
+		new fyro.vec2i(x, 0),
+		new fyro.vec2i(x, 1)
+	]);
+	player.set_size(16, 24);
+	player.align(0.5, 0.5);
+	return player;
+}
 
+var player_le = load_player(0);
+var player_al = load_player(1);
+var player_mi = load_player(2);
+var player_ar = load_player(3);
+var player_ri = load_player(4);
+
+fyro.sync_sprite_animations([player_le, player_al, player_mi, player_ar, player_ri]);
+
+fun abs(x)
+{
+	if(x >= 0) { return x;}
+	else { return -x; }
+}
+
+fun sign(x)
+{
+	if(x >= 0) { return 1;}
+	else { return -1; }
+}
 
 class GameState
 {
@@ -18,14 +47,24 @@ class GameState
 	public var p1y = game_size / 6.0;
 
 	public var bkg_y = 0;
+	public var dx = 0;
 
 	public fun update(dt)
 	{
-		var speed = 30.0;
-
 		var player1 = fyro.get_input();
-		this.p1x += player1.current.axis_left_x * dt * speed;
-		this.p1y += player1.current.axis_left_y * dt * speed;
+		this.p1x += player1.current.axis_left_x * dt * player_speed;
+		this.p1y += player1.current.axis_left_y * dt * player_speed;
+
+		if( abs(player1.current.axis_left_x) > 0.3 )
+		{
+			this.dx += player1.current.axis_left_x * dt * anim_time_acc;
+			if(abs(this.dx) > abs(player1.current.axis_left_x)) { this.dx = player1.current.axis_left_x; }
+		}
+		else
+		{
+			this.dx -= sign(this.dx) * dt * anim_time_de;
+			if(abs(this.dx) < 0.1) { this.dx = 0; }
+		}
 
 		this.bkg_y -= dt * bkg_speed;
 		if(this.bkg_y < -game_size)
@@ -42,6 +81,11 @@ class GameState
 		cmd.sprite(bkg, 0, this.bkg_y + game_size);
 		cmd.sprite(bkg, 0, this.bkg_y);
 
+		var player = player_mi;
+		if(this.dx > range_almost) { player = player_ar; }
+		if(this.dx > range_most) { player = player_ri; }
+		if(this.dx < -range_almost) { player = player_al; }
+		if(this.dx < -range_most) { player = player_le; }
 		cmd.sprite(player, this.p1x, this.p1y);
 	}
 }
