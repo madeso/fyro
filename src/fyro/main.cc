@@ -172,7 +172,8 @@ std::optional<json> load_json_or_none(const std::string& path)
 {
 	if(const auto src = read_file_to_string_or_none(path))
 	{
-		return json::parse(*src);
+		auto parsed = json::parse(*src);
+		return parsed; // assigning to a variable and then returning makes gcc happy
 	}
 	else
 	{
