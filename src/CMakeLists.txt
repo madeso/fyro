@@ -31,6 +31,8 @@ set(src_base
 	fyro/types.cc fyro/types.h
 	fyro/windows.sdl.convert.cc fyro/windows.sdl.convert.h
 
+	fyro/collision2.cc
+
 	fyro/main.cc
 )
 
