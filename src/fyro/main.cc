@@ -229,7 +229,33 @@ struct PrintLoxError : lox::PrintHandler
 	}
 };
 
-struct Rgb { float r; float g; float b; };
+constexpr float rgb_i2f(int i)
+{
+	return static_cast<float>(i) / 255.0f;
+}
+
+struct Rgb
+{
+	float r;
+	float g;
+	float b;
+
+	Rgb() = default;
+
+	constexpr Rgb(float ir, float ig, float ib)
+		: r(ir)
+		, g(ig)
+		, b(ib)
+	{
+	}
+	
+	constexpr Rgb(int ir, int ig, int ib)
+		: r(rgb_i2f(ir))
+		, g(rgb_i2f(ig))
+		, b(rgb_i2f(ib))
+	{
+	}
+};
 
 struct RenderData
 {
@@ -1195,8 +1221,45 @@ struct ExampleGame : public Game
 		}
 	}
 
+	void bind_named_colors()
+	{
+		auto rgb = lox.in_package("fyro.rgb");
+		rgb->add_native_getter("white", [&]() { return lox.make_native(Rgb{           255, 255, 255 }); });
+		rgb->add_native_getter("light_gray", [&]() { return lox.make_native(Rgb{      160, 160, 160 }); });
+		rgb->add_native_getter("gray", [&]() { return lox.make_native(Rgb{            127, 127, 127 }); });
+		rgb->add_native_getter("dark_gray", [&]() { return lox.make_native(Rgb{       87, 87, 87    }); });
+		rgb->add_native_getter("black", [&]() { return lox.make_native(Rgb{           0, 0, 0       }); });
+		rgb->add_native_getter("red", [&]() { return lox.make_native(Rgb{             173, 35, 35   }); });
+		rgb->add_native_getter("pure_red", [&]() { return lox.make_native(Rgb{        255, 0, 0     }); });
+		rgb->add_native_getter("blue", [&]() { return lox.make_native(Rgb{            42, 75, 215   }); });
+		rgb->add_native_getter("pure_blue", [&]() { return lox.make_native(Rgb{       0, 0, 255     }); });
+		rgb->add_native_getter("light_blue", [&]() { return lox.make_native(Rgb{      157, 175, 255 }); });
+		rgb->add_native_getter("normal_blue", [&]() { return lox.make_native(Rgb{     127, 127, 255 }); });
+		rgb->add_native_getter("cornflower_blue", [&]() { return lox.make_native(Rgb{ 100, 149, 237 }); });
+		rgb->add_native_getter("green", [&]() { return lox.make_native(Rgb{           29, 105, 20   }); });
+		rgb->add_native_getter("pure_green", [&]() { return lox.make_native(Rgb{      0, 255, 0     }); });
+		rgb->add_native_getter("light_green", [&]() { return lox.make_native(Rgb{     129, 197, 122 }); });
+		rgb->add_native_getter("yellow", [&]() { return lox.make_native(Rgb{          255, 238, 51  }); });
+		rgb->add_native_getter("pure_yellow", [&]() { return lox.make_native(Rgb{     255, 255, 0   }); });
+		rgb->add_native_getter("orange", [&]() { return lox.make_native(Rgb{          255, 146, 51  }); });
+		rgb->add_native_getter("pure_orange", [&]() { return lox.make_native(Rgb{     255, 127, 0   }); });
+		rgb->add_native_getter("brown", [&]() { return lox.make_native(Rgb{           129, 74, 25   }); });
+		rgb->add_native_getter("pure_brown", [&]() { return lox.make_native(Rgb{      250, 75, 0    }); });
+		rgb->add_native_getter("purple", [&]() { return lox.make_native(Rgb{          129, 38, 192  }); });
+		rgb->add_native_getter("pure_purple", [&]() { return lox.make_native(Rgb{     128, 0, 128   }); });
+		rgb->add_native_getter("pink", [&]() { return lox.make_native(Rgb{            255, 205, 243 }); });
+		rgb->add_native_getter("pure_pink", [&]() { return lox.make_native(Rgb{       255, 192, 203 }); });
+		rgb->add_native_getter("pure_beige", [&]() { return lox.make_native(Rgb{      245, 245, 220 }); });
+		rgb->add_native_getter("tan", [&]() { return lox.make_native(Rgb{             233, 222, 187 }); });
+		rgb->add_native_getter("pure_tan", [&]() { return lox.make_native(Rgb{        210, 180, 140 }); });
+		rgb->add_native_getter("cyan", [&]() { return lox.make_native(Rgb{            41, 208, 208  }); });
+		rgb->add_native_getter("pure_cyan", [&]() { return lox.make_native(Rgb{       0, 255, 255   }); });
+
+	}
+
 	void bind_functions()
 	{
+		bind_named_colors();
 		auto fyro = lox.in_package("fyro");
 		
 		fyro->define_native_function("set_state", [this](lox::Callable*, lox::ArgumentHelper& arguments)

@@ -108,10 +108,9 @@ class GameState
 		// cmd.extend(200, 200);
 		cmd.windowbox(this.gs * this.tc, this.gs * this.tc);
 
-		// todo(Gustav): find better colors
-		var background = new fyro.Rgb(0, 0, 0);
-		var snake = new fyro.Rgb(0.75, 1, 0);
-		var apple = new fyro.Rgb(1, 0, 0);
+		var background = fyro.rgb.light_gray;
+		var snake = fyro.rgb.light_green;
+		var apple = fyro.rgb.red;
 
 		cmd.clear(background);
 	
