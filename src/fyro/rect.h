@@ -258,6 +258,17 @@ rectcut_cut(const RectCut<T>& rectcut, T a)
 }
 
 
+template<typename T>
+bool
+rect_intersect(const Rect<T>& lhs, const Rect<T>& rhs)
+{
+	return !(rhs.left   > lhs.right  ||
+             rhs.right  < lhs.left   ||
+             rhs.top    > lhs.bottom ||
+             rhs.bottom < lhs.top);
+}
+
+
 
 // Extensions
 #if 0
