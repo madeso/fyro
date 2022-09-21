@@ -65,7 +65,9 @@ bool ActorList::has_actor(const std::shared_ptr<Actor>& a) const
 	return actors.find(a.get()) != actors.end();
 }
 
-void no_collision_reaction() {};
+void no_collision_reaction()
+{
+}
 
 
 
