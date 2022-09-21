@@ -101,11 +101,10 @@ struct Actor : Aabb
 	// define the behavior when an Actor is squeezed between two Solids
 	virtual void get_squished() = 0;
 
-	void move_x(float dx, CollisionReaction on_collision);
-	void move_y(float dy, CollisionReaction on_collision);
-
-	void please_move_x(int dx, CollisionReaction on_collision);
-	void please_move_y(int dy, CollisionReaction on_collision);
+	bool move_x(float dx, CollisionReaction on_collision);
+	bool move_y(float dy, CollisionReaction on_collision);
+	bool please_move_x(int dx, CollisionReaction on_collision);
+	bool please_move_y(int dy, CollisionReaction on_collision);
 };
 
 

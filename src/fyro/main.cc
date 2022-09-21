@@ -13,10 +13,17 @@
 #include "fyro/fyro.h"
 #include "fyro/render/font.h"
 #include "fyro/render/texture.h"
+#include "fyro/collision2.h"
 
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+
+int to_int(lox::Ti ti)
+{
+	return static_cast<int>(ti);
+}
 
 
 struct Exception
@@ -1172,6 +1179,183 @@ struct Cache
 	}
 };
 
+
+// c++ wrappers over the specific lox class
+
+struct ScriptActor
+{
+	std::shared_ptr<lox::Instance> instance;
+
+	std::shared_ptr<lox::Callable> on_update;
+	std::shared_ptr<lox::Callable> on_render;
+	std::shared_ptr<lox::Callable> on_get_squished;
+
+	ScriptActor(std::shared_ptr<lox::Instance> in)
+		: instance(in)
+	{
+		on_update = instance->get_bound_method_or_null("update");
+		on_render = instance->get_bound_method_or_null("render");
+		on_get_squished = instance->get_bound_method_or_null("get_squished");
+	}
+
+	void update(float dt)
+	{
+		if(on_update)
+		{
+			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
+		}
+	}
+
+	void render(std::shared_ptr<lox::Object> rc)
+	{
+		if(on_render)
+		{
+			on_render->call({{rc}});
+		}
+	}
+
+	bool is_riding_solid(fyro::Solid*)
+	{
+		// todo(Gustav): implement this
+		return false;
+	}
+
+	void get_squished()
+	{
+		if(on_get_squished)
+		{
+			on_get_squished->call({{}});
+		}
+	}
+};
+
+
+struct ScriptSolid
+{
+	std::shared_ptr<lox::Instance> instance;
+
+	std::shared_ptr<lox::Callable> on_update;
+	std::shared_ptr<lox::Callable> on_render;
+
+	ScriptSolid(std::shared_ptr<lox::Instance> in)
+		: instance(in)
+	{
+		on_update = instance->get_bound_method_or_null("update");
+		on_render = instance->get_bound_method_or_null("render");
+	}
+
+	void update(float dt)
+	{
+		if(on_update)
+		{
+			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
+		}
+	}
+
+	void render(std::shared_ptr<lox::Object> rc)
+	{
+		if(on_render)
+		{
+			on_render->call({{rc}});
+		}
+	}
+};
+
+
+// the actual c++ class dispatching the virtual functions to the base
+
+struct ScriptActorImpl : fyro::Actor
+{
+	std::shared_ptr<ScriptActor> dispatcher;
+
+	bool is_riding_solid(fyro::Solid* solid) override
+	{
+		if(dispatcher) { return dispatcher->is_riding_solid(solid); }
+		else { return false; }
+	}
+
+	void get_squished() override
+	{
+		if(dispatcher) { return dispatcher->get_squished(); }
+	}
+
+	void update(float dt) override
+	{
+		assert(dispatcher);
+		dispatcher->update(dt);
+	}
+
+	void render(std::shared_ptr<lox::Object> rc) override
+	{
+		assert(dispatcher);
+		dispatcher->render(rc);
+	}
+};
+
+struct ScriptSolidImpl : fyro::Solid
+{
+	std::shared_ptr<ScriptSolid> dispatcher;
+
+	void update(float dt) override
+	{
+		assert(dispatcher);
+		dispatcher->update(dt);
+	}
+
+	void render(std::shared_ptr<lox::Object> rc) override
+	{
+		assert(dispatcher);
+		dispatcher->render(rc);
+	}
+};
+
+
+// the lox variable wrapper
+
+struct ScriptActorBase
+{
+	ScriptActorBase()
+		: impl(std::make_shared<ScriptActorImpl>())
+	{
+	}
+
+	std::shared_ptr<ScriptActorImpl> impl;
+};
+
+struct ScriptSolidBase
+{
+	ScriptSolidBase()
+		: impl(std::make_shared<ScriptSolidImpl>())
+	{
+	}
+
+	std::shared_ptr<ScriptSolidImpl> impl;
+};
+
+struct ScriptLevel
+{
+	fyro::Level level;
+
+	void add_actor(std::shared_ptr<lox::Instance> x)
+	{
+		auto dispatcher = std::make_shared<ScriptActor>(x);
+		auto actor = lox::get_derived<ScriptActorBase>(x);
+		actor->impl->dispatcher = dispatcher;
+		actor->impl->level = &level;
+		level.actors.emplace_back(actor->impl);
+	}
+
+	void add_solid(std::shared_ptr<lox::Instance> x)
+	{
+		auto dispatcher = std::make_shared<ScriptSolid>(x);
+		auto solid = lox::get_derived<ScriptSolidBase>(x);
+		solid->impl->dispatcher = dispatcher;
+		solid->impl->level = &level;
+		level.solids.emplace_back(solid->impl);
+	}
+};
+
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -1254,12 +1438,101 @@ struct ExampleGame : public Game
 		rgb->add_native_getter("pure_tan", [&]() { return lox.make_native(Rgb{        210, 180, 140 }); });
 		rgb->add_native_getter("cyan", [&]() { return lox.make_native(Rgb{            41, 208, 208  }); });
 		rgb->add_native_getter("pure_cyan", [&]() { return lox.make_native(Rgb{       0, 255, 255   }); });
+	}
 
+	void bind_collision()
+	{
+		auto fyro = lox.in_package("fyro");
+		
+		lox.in_global_scope()->define_native_class<ScriptActorBase>("Actor")
+			.add_function("move_x", [](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto dist = static_cast<float>(ah.require_float());
+				ah.complete();
+				auto r = x.impl->move_x(dist, fyro::no_collision_reaction);
+				return lox::make_bool(r);
+			})
+			.add_function("move_y", [](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto dist = static_cast<float>(ah.require_float());
+				ah.complete();
+				auto r = x.impl->move_y(dist, fyro::no_collision_reaction);
+				return lox::make_bool(r);
+			})
+			.add_property<lox::Ti>("x",      [](ScriptActorBase& x) -> lox::Ti {return x.impl->position.x;}, [](ScriptActorBase& x, lox::Ti v) {x.impl->position.x = to_int(v);})
+			.add_property<lox::Ti>("y",      [](ScriptActorBase& x) -> lox::Ti {return x.impl->position.y;}, [](ScriptActorBase& x, lox::Ti v) {x.impl->position.y = to_int(v);})
+			.add_getter<lox::Ti>("width",  [](ScriptActorBase& x) -> lox::Ti {return x.impl->size.get_width();})
+			.add_getter<lox::Ti>("height", [](ScriptActorBase& x) -> lox::Ti {return x.impl->size.get_height();})
+			.add_function("set_size", [](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto width = to_int(ah.require_int());
+				auto height = to_int(ah.require_int());
+				ah.complete();
+				x.impl->size = Recti{width, height};
+				return lox::make_nil();
+			})
+
+			;
+
+		lox.in_global_scope()->define_native_class<ScriptSolidBase>("Solid")
+			.add_function("move", [](ScriptSolidBase& s, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto dx = static_cast<float>(ah.require_float());
+				auto dy = static_cast<float>(ah.require_float());
+				ah.complete();
+				s.impl->Move(dx, dy);
+				return lox::make_nil();
+			})
+			.add_property<lox::Ti>("x",      [](ScriptSolidBase& x) -> lox::Ti {return x.impl->position.x;}, [](ScriptSolidBase& x, lox::Ti v) {x.impl->position.x = to_int(v);})
+			.add_property<lox::Ti>("y",      [](ScriptSolidBase& x) -> lox::Ti {return x.impl->position.y;}, [](ScriptSolidBase& x, lox::Ti v) {x.impl->position.y = to_int(v);})
+			.add_getter<lox::Ti>("width",  [](ScriptSolidBase& x) -> lox::Ti {return x.impl->size.get_width();})
+			.add_getter<lox::Ti>("height", [](ScriptSolidBase& x) -> lox::Ti {return x.impl->size.get_height();})
+			.add_function("set_size", [](ScriptSolidBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto width = to_int(ah.require_int());
+				auto height = to_int(ah.require_int());
+				ah.complete();
+				x.impl->size = Recti{width, height};
+				return lox::make_nil();
+			})
+			;
+
+		fyro->define_native_class<ScriptLevel>("Level")
+			.add_function("add", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto inst = ah.require_instance();
+				ah.complete();
+				r.add_actor(inst);
+				return lox::make_nil();
+			})
+			.add_function("add_solid", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto inst = ah.require_instance();
+				ah.complete();
+				r.add_solid(inst);
+				return lox::make_nil();
+			})
+			.add_function("update", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto dt = static_cast<float>(ah.require_float());
+				ah.complete();
+				r.level.update(dt);
+				return lox::make_nil();
+			})
+			.add_function("render", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto rend = ah.require_object();
+				ah.complete();
+				r.level.render(rend);
+				return lox::make_nil();
+			})
+			;
 	}
 
 	void bind_functions()
 	{
 		bind_named_colors();
+		bind_collision();
 		auto fyro = lox.in_package("fyro");
 		
 		fyro->define_native_function("set_state", [this](lox::Callable*, lox::ArgumentHelper& arguments)

@@ -19,7 +19,7 @@ int Round(float f)
 int Sign(int x)
 {
 	if(x > 0) { return 1; }
-	else { return 0; }
+	else { return -1; }
 }
 
 
@@ -99,6 +99,7 @@ bool Actor::collide_at(const glm::ivec2& new_position)
 
 	for(auto& actor: level->actors)
 	{
+		if(actor.get() == this) { continue; }
 		if(rect_intersect(self, actor->get_rect()))
 		{
 			level->register_collision(this, actor.get());
@@ -108,6 +109,7 @@ bool Actor::collide_at(const glm::ivec2& new_position)
 	for(auto& solid: level->solids)
 	{
 		if(solid->is_collidable == false) { continue; }
+
 		if(rect_intersect(self, solid->get_rect()))
 		{
 			return true;
@@ -118,29 +120,37 @@ bool Actor::collide_at(const glm::ivec2& new_position)
 }
 
 
-void Actor::move_x(float dx, CollisionReaction on_collision) 
+bool Actor::move_x(float dx, CollisionReaction on_collision) 
 { 
 	x_remainder += dx;
 	int x_change = Round(x_remainder);
 	if (x_change != 0)
 	{
 		x_remainder -= static_cast<float>(x_change);
-		please_move_x(x_change, std::move(on_collision));
+		return please_move_x(x_change, std::move(on_collision));
+	}
+	else
+	{
+		return false;
 	}
 }
 
-void Actor::move_y(float dy, CollisionReaction on_collision) 
+bool Actor::move_y(float dy, CollisionReaction on_collision) 
 { 
 	y_remainder += dy;
 	int y_change = Round(y_remainder);
 	if (y_change != 0)
 	{
 		y_remainder -= static_cast<float>(y_change);
-		please_move_y(y_change, std::move(on_collision));
+		return please_move_y(y_change, std::move(on_collision));
+	}
+	else
+	{
+		return false;
 	}
 }
 
-void Actor::please_move_x(int dx, CollisionReaction on_collision)
+bool Actor::please_move_x(int dx, CollisionReaction on_collision)
 {
 	const int sign = Sign(dx);
 	int steps_to_move = dx;
@@ -154,12 +164,14 @@ void Actor::please_move_x(int dx, CollisionReaction on_collision)
 		else
 		{
 			on_collision();
-			break;
+			return true;
 		}
 	}
+
+	return false;
 }
 
-void Actor::please_move_y(int dy, CollisionReaction on_collision)
+bool Actor::please_move_y(int dy, CollisionReaction on_collision)
 {
 	const int sign = Sign(dy);
 	int steps_to_move = dy;
@@ -173,9 +185,11 @@ void Actor::please_move_y(int dy, CollisionReaction on_collision)
 		else
 		{
 			on_collision();
-			break;
+			return true;
 		}
 	}
+
+	return false;
 }
 
 

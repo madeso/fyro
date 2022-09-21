@@ -1,0 +1,103 @@
+var random = new fyro.Random();
+var BLOCK_SIZE = 50;
+var GAME_SIZE = 200;
+var PLAYER_SIZE = 10;
+
+class Block : Solid
+{
+	public fun init()
+	{
+		super();
+		this.set_size(10 + random.next_int(BLOCK_SIZE),
+			10 + random.next_int(BLOCK_SIZE));
+		this.x = 10 + random.next_int(GAME_SIZE - BLOCK_SIZE);
+		this.y = 10 + random.next_int(BLOCK_SIZE);
+	}
+
+	public fun render(cmd)
+	{
+		cmd.rect(fyro.rgb.light_green, this.x, this.y, this.width, this.height);
+	}
+}
+
+class Player : Actor
+{
+	public var input;
+	public var dy = 0;
+
+	public fun init()
+	{
+		super();
+		this.set_size(PLAYER_SIZE, PLAYER_SIZE);
+
+		// hope we don't collide here
+		this.x = 100;
+		this.y = 150;
+	}
+
+	public fun update(dt)
+	{
+		var gravity = 160;
+		var speed = 50;
+		this.dy -= dt * gravity;
+		this.move_x(speed * dt * this.input.current.axis_left_x);
+		var collided = this.move_y(this.dy * dt);
+		if(collided)
+		{
+			this.dy = 0;
+		}
+
+		if(this.input.current.button_x and this.input.last.button_x == false)
+		{
+			this.dy = 100;
+		}
+	}
+
+	public fun render(cmd)
+	{
+		cmd.rect(fyro.rgb.red, this.x, this.y, this.width, this.height);
+	}
+}
+
+class GameState
+{
+	public var level;
+	public var player;
+
+	public fun init()
+	{
+		this.start();
+	}
+
+	public fun start()
+	{
+		this.level = new fyro.Level();
+		this.player = new Player();
+		this.level.add(this.player);
+
+		for(var index=0; index < 10; index+=1)
+		{
+			this.level.add_solid(new Block());
+		}
+	}
+
+	public fun update(dt)
+	{
+		this.player.input = fyro.get_input();
+		this.level.update(dt);
+
+		if(this.player.y < -PLAYER_SIZE)
+		{
+			this.start();
+		}
+	}
+
+	public fun render(cmd)
+	{
+		cmd.windowbox(GAME_SIZE, GAME_SIZE);
+		cmd.clear(fyro.rgb.dark_gray);
+		this.level.render(cmd);
+	}
+}
+
+fyro.set_state(new GameState());
