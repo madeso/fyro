@@ -1989,12 +1989,36 @@ struct Physfs
 
 int run(int argc, char** argv)
 {
-	bool call_imgui = true;
 	auto physfs = Physfs(argv[0]);
-	
-	if(argc == 2)
+	bool call_imgui = false;
+	std::optional<std::string> folder_arg;
+
+	for(int index=1; index<argc; index+=1)
 	{
-		fs::path folder = argv[1];
+		const std::string cmd = argv[index];
+		if(cmd == "--imgui")
+		{
+			call_imgui = true;
+		}
+		else
+		{
+			if(folder_arg)
+			{
+				std::cerr << "Folder already specified as " << *folder_arg << ": " << cmd << "\n";
+				return -1;
+			}
+			else
+			{
+				folder_arg = cmd;
+			}
+		}
+	}
+
+
+	
+	if(folder_arg)
+	{
+		fs::path folder = *folder_arg;
 		folder = fs::canonical(folder);
 		physfs.setup(folder.string());
 	}
