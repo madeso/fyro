@@ -66,6 +66,7 @@ class Player : Actor
 {
 	public var input;
 	public var dy = 0;
+	public var facing_right = true;
 
 	public var run_timer = 0;
 	public var floor_timer = 0;
@@ -105,6 +106,8 @@ class Player : Actor
 		if(abs(this.input.current.axis_left_x) > 0.1)
 		{
 			this.run_timer = RUN_TIMER;
+
+			this.facing_right = this.input.current.axis_left_x > 0;
 		}
 
 		if(this.input.current.button_x and this.input.last.button_x == false)
@@ -133,7 +136,7 @@ class Player : Actor
 				anim = char.fall;
 			}
 		}
-		cmd.sprite(anim, this.x, this.y);
+		cmd.sprite(anim, this.x, this.y, !this.facing_right, false);
 	}
 }
 

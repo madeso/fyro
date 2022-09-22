@@ -1602,7 +1602,7 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				layer.batch->quad({}, layer.viewport_aabb_in_worldspace, {}, {color->r, color->g, color->b, 1.0f});
+				layer.batch->quadf({}, layer.viewport_aabb_in_worldspace, {}, false, {color->r, color->g, color->b, 1.0f});
 				return lox::make_nil();
 			})
 			.add_function("rect", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -1624,7 +1624,7 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				layer.batch->quad({}, Rect{width, height}.translate(x, y), {}, {color->r, color->g, color->b, 1.0f}
+				layer.batch->quadf({}, Rect{width, height}.translate(x, y), {}, false, {color->r, color->g, color->b, 1.0f}
 				);
 				return lox::make_nil();
 			})
@@ -1671,8 +1671,10 @@ struct ExampleGame : public Game
 				// auto color = ah.require_native<Rgb>();
 				const auto x = static_cast<float>(ah.require_float());
 				const auto y = static_cast<float>(ah.require_float());
-
+				const auto flip_x = ah.require_bool();
+				/* const auto flip_y =*/ ah.require_bool();
 				ah.complete();
+
 				if(texture == nullptr) { return nullptr; }
 
 				auto data = r.data;
@@ -1687,7 +1689,7 @@ struct ExampleGame : public Game
 				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
 				const auto tint = glm::vec4(1.0f);
 				const auto screen = Rectf{sprite.screen}.translate(x, y);
-				layer.batch->quad(sprite.texture.get(), screen, sprite.uv, tint);
+				layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
 				
 				return lox::make_nil();
 			})
@@ -1932,7 +1934,7 @@ struct ExampleGame : public Game
 		{
 			// todo(Gustav): draw some basic thing here since to state is set?
 			auto r = render::with_layer2(rc, render::LayoutData{render::ViewportStyle::extended, 200.0f, 200.0f});
-			r.batch->quad({}, r.viewport_aabb_in_worldspace, {}, {0.8, 0.8, 0.8, 1.0f});
+			r.batch->quadf({}, r.viewport_aabb_in_worldspace, {}, false, {0.8, 0.8, 0.8, 1.0f});
 			r.batch->submit();
 		}
 	}

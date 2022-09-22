@@ -96,7 +96,7 @@ RenderCommand::clear(const glm::vec3& color, const LayoutData& ld) const
 	else
 	{
 		auto l = with_layer2(*this, ld);
-		l.batch->quad({}, l.viewport_aabb_in_worldspace, {}, glm::vec4{color, 1.0f});
+		l.batch->quadf({}, l.viewport_aabb_in_worldspace, {}, false, glm::vec4{color, 1.0f});
 	}
 }
 

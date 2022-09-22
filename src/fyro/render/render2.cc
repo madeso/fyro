@@ -144,23 +144,23 @@ void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex2& 
 	add_vertex(this, v3);
 }
 
-void SpriteBatch::quad(std::optional<Texture*> texture, const Rectf& scr, const std::optional<Rectf>& texturecoord, const glm::vec4& tint)
+void SpriteBatch::quadf(std::optional<Texture*> texture, const Rectf& scr, const std::optional<Rectf>& texturecoord, bool flip_x, const glm::vec4& tint)
 {
 	const auto tc = texturecoord.value_or(Rectf{1.0f, 1.0f});
 	quad
 	(
 		texture,
-		{{scr.left, scr.bottom, 0.0f}, tint, {tc.left, tc.bottom}},
-		{{scr.right, scr.bottom, 0.0f}, tint, {tc.right, tc.bottom}},
-		{{scr.right, scr.top, 0.0f}, tint, {tc.right, tc.top}},
-		{{scr.left, scr.top, 0.0f}, tint, {tc.left, tc.top}}
+		{{scr.left,  scr.bottom, 0.0f}, tint, {flip_x ? tc.right : tc.left,  tc.bottom}},
+		{{scr.right, scr.bottom, 0.0f}, tint, {flip_x ? tc.left  : tc.right, tc.bottom}},
+		{{scr.right, scr.top,    0.0f}, tint, {flip_x ? tc.left  : tc.right, tc.top}},
+		{{scr.left,  scr.top,    0.0f}, tint, {flip_x ? tc.right : tc.left,  tc.top}}
 	);
 }
 
-void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint)
+void SpriteBatch::quadi(std::optional<Texture*> texture_argument, const Rectf& scr, const Recti& texturecoord, bool flip_x, const glm::vec4& tint)
 {
 	Texture* texture = texture_argument.value_or(&white_texture);
-	quad(texture, scr, get_sprite(*texture, texturecoord), tint);
+	quadf(texture, scr, get_sprite(*texture, texturecoord), flip_x, tint);
 }
 
 void SpriteBatch::submit()
