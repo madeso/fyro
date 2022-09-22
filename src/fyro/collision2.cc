@@ -43,14 +43,14 @@ void Level::update(float dt)
 
 void Level::render(std::shared_ptr<lox::Object> arg)
 {
-	for(auto& actor: actors)
-	{
-		actor->render(arg);
-	}
-
 	for(auto& solid: solids)
 	{
 		solid->render(arg);
+	}
+
+	for(auto& actor: actors)
+	{
+		actor->render(arg);
 	}
 }
 

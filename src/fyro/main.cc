@@ -1471,7 +1471,16 @@ struct ExampleGame : public Game
 				x.impl->size = Recti{width, height};
 				return lox::make_nil();
 			})
-
+			.add_function("set_lrud", [](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto left = to_int(ah.require_int());
+				auto right = to_int(ah.require_int());
+				auto up = to_int(ah.require_int());
+				auto down = to_int(ah.require_int());
+				ah.complete();
+				x.impl->size = Recti{left, down, right, up};
+				return lox::make_nil();
+			})
 			;
 
 		lox.in_global_scope()->define_native_class<ScriptSolidBase>("Solid")
@@ -1795,15 +1804,23 @@ struct ExampleGame : public Game
 				return dst;
 			};
 			const auto path = ah.require_string();
-			const auto tiles_per_x = static_cast<float>(ah.require_int());
-			const auto tiles_per_y = static_cast<float>(ah.require_int());
+			const auto tiles_per_x = static_cast<int>(ah.require_int());
+			const auto tiles_per_y = static_cast<int>(ah.require_int());
 			const auto anim_speed = static_cast<float>(ah.require_float());
-			const auto tiles_array = to_vec2i_array(ah.require_array());
+			auto tiles_array = to_vec2i_array(ah.require_array());
 			ah.complete();
 
 			if(tiles_array.empty())
 			{
-				lox::raise_error("sprite array was empty");
+				// lox::raise_error("sprite array was empty");
+
+				for(int y=0; y < tiles_per_y; y+=1)
+				{
+					for(int x=0; x < tiles_per_x; x+=1)
+					{
+						tiles_array.emplace_back(x, y);
+					}
+				}
 			}
 
 			ScriptSprite r;
@@ -1816,8 +1833,8 @@ struct ExampleGame : public Game
 				const auto ih = static_cast<float>(s.texture->height);
 				s.screen = Rectf{iw, ih};
 
-				const auto tile_pix_w = iw/tiles_per_x;
-				const auto tile_pix_h = ih/tiles_per_y;
+				const auto tile_pix_w = iw/static_cast<float>(tiles_per_x);
+				const auto tile_pix_h = ih/static_cast<float>(tiles_per_y);
 				const auto tile_frac_w = tile_pix_w / iw;
 				const auto tile_frac_h = tile_pix_h / ih;
 				const auto dx = tile_frac_w * static_cast<float>(tile.x);

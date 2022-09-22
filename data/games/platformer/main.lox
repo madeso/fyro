@@ -1,7 +1,49 @@
 var random = new fyro.Random();
 var BLOCK_SIZE = 50;
 var GAME_SIZE = 200;
-var PLAYER_SIZE = 10;
+var PLAYER_SIZE = 32;
+var RUN_TIMER = 0.1;
+
+fun abs(x)
+{
+	if(x >= 0) { return x;}
+	else { return -x; }
+}
+
+fun sign(x)
+{
+	if(x >= 0) { return 1;}
+	else { return -1; }
+}
+
+class PlayerAnim
+{
+	public var idle;
+	public var run;
+	public var jump;
+	public var fall;
+
+	public fun init(name)
+	{
+		this.idle = fyro.load_sprite("gfx/Main Characters/" + name + "/Idle (32x32).png", 11, 1, 0.05, []);
+		this.idle.set_size(32, 32);
+		this.idle.align(0.5, 0);
+
+		this.run = fyro.load_sprite("gfx/Main Characters/" + name + "/Run (32x32).png", 12, 1, 0.05, []);
+		this.run.set_size(32, 32);
+		this.run.align(0.5, 0);
+
+		this.jump = fyro.load_sprite("gfx/Main Characters/" + name + "/Jump (32x32).png", 1, 1, 0.05, []);
+		this.jump.set_size(32, 32);
+		this.jump.align(0.5, 0);
+
+		this.fall = fyro.load_sprite("gfx/Main Characters/" + name + "/Fall (32x32).png", 1, 1, 0.05, []);
+		this.fall.set_size(32, 32);
+		this.fall.align(0.5, 0);
+	}
+}
+
+var pinkman = new PlayerAnim("Pink Man");
 
 class Block : Solid
 {
@@ -25,10 +67,13 @@ class Player : Actor
 	public var input;
 	public var dy = 0;
 
+	public var run_timer = 0;
+	public var floor_timer = 0;
+
 	public fun init()
 	{
 		super();
-		this.set_size(PLAYER_SIZE, PLAYER_SIZE);
+		this.set_lrud(-7, 7, PLAYER_SIZE, 0);
 
 		// hope we don't collide here
 		this.x = 100;
@@ -45,6 +90,21 @@ class Player : Actor
 		if(collided)
 		{
 			this.dy = 0;
+			this.floor_timer = 0;
+		}
+		else
+		{
+			this.floor_timer += dt;
+		}
+
+		if(this.run_timer > 0)
+		{
+			this.run_timer -= dt;
+		}
+
+		if(abs(this.input.current.axis_left_x) > 0.1)
+		{
+			this.run_timer = RUN_TIMER;
 		}
 
 		if(this.input.current.button_x and this.input.last.button_x == false)
@@ -55,7 +115,25 @@ class Player : Actor
 
 	public fun render(cmd)
 	{
-		cmd.rect(fyro.rgb.red, this.x, this.y, this.width, this.height);
+		var char = pinkman;
+		// cmd.rect(fyro.rgb.red, this.x, this.y, this.width, this.height);
+		var anim = char.idle;
+		if(this.run_timer > 0)
+		{
+			anim = char.run;
+		}
+		if(this.floor_timer > 0.2 )
+		{
+			if(this.dy > 0)
+			{
+				anim = char.jump;
+			}
+			else
+			{
+				anim = char.fall;
+			}
+		}
+		cmd.sprite(anim, this.x, this.y);
 	}
 }
 
