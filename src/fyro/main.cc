@@ -1353,6 +1353,12 @@ struct ScriptLevelData
 	Map tiles;
 };
 
+struct FixedSolid : fyro::Solid
+{
+	void update(float) override {}
+	void render(std::shared_ptr<lox::Object>) override {}
+};
+
 struct ScriptLevel
 {
 	ScriptLevel()
@@ -1369,6 +1375,25 @@ struct ScriptLevel
 		const auto was_loaded = map.loadFromString(source, get_dir_from_file(path));
 		if(was_loaded == false ) { throw Exception{{"failed to parse tmx file"}}; }
 		data->tiles.load_from_map(map);
+
+		for(const auto& rect: data->tiles.get_collisions())
+		{
+			auto solid = std::make_shared<FixedSolid>();
+			solid->level = &data->level;
+
+			solid->position = glm::ivec2
+			{
+				static_cast<int>(rect.left),
+				static_cast<int>(rect.bottom)
+			};
+			solid->size = Recti
+			{
+				static_cast<int>(rect.get_width()),
+				static_cast<int>(rect.get_height())
+			};
+
+			data->level.solids.emplace_back(solid);
+		}
 	}
 
 	void add_actor(std::shared_ptr<lox::Instance> x)

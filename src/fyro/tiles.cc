@@ -18,6 +18,7 @@ std::shared_ptr<render::Texture> load_texture(const std::string& path);
 
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
+#include <tmxlite/Tileset.hpp>
 
 
 int floor_to_int(float f)
@@ -192,6 +193,7 @@ struct ChunkArray
 	{
 		tiles.clear();
 	}
+
 	void addTile(const RenderQuad& tile)
 	{
 		// std::cout << "adding tile:\n";
@@ -211,8 +213,12 @@ struct ChunkArray
 	}
 };
 
+void add_collision(MapImpl* impl, const glm::vec2& pos, const glm::vec2& size, const tmx::Tileset::Tile& tile);
+
 struct Chunk
 {
+	MapImpl* owner;
+
 	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;    // animation catalogue
 	glm::vec2 bounds;
 
@@ -231,6 +237,7 @@ struct Chunk
 
 	Chunk
 	(
+		MapImpl* o,
 		const tmx::TileLayer& layer,
 		std::vector<const tmx::Tileset*> tilesets,
 		const glm::vec2& position,
@@ -240,11 +247,11 @@ struct Chunk
 		const glm::vec2& abounds,
 		const std::map<std::uint32_t, tmx::Tileset::Tile>& animTiles
 	)
-		: m_animTiles(animTiles)
+		: owner(o)
+		, m_animTiles(animTiles)
 		, bounds(abounds)
 	{
 		setPosition(position);
-		std::cout << "position " << position.x << " " << position.y << "\n";
 		layerOpacity = layer.getOpacity();
 		glm::vec4 vertColour = glm::vec4{1.0f ,1.0f, 1.0f, layerOpacity};
 		auto offset = layer.getOffset();
@@ -279,21 +286,26 @@ struct Chunk
 				m_chunkColors.emplace_back(vertColour);
 			}
 		}
-		generateTiles(true);
+		generateTiles(true, tilesets);
 	}
 
 	~Chunk() = default;
 	Chunk(const Chunk&) = delete;
 	Chunk& operator = (const Chunk&) = delete;
 
-	void generateTiles(bool registerAnimation = false)
+	void generateTiles(bool registerAnimation, std::vector<const tmx::Tileset*> tilesets)
 	{
 		if (registerAnimation)
 		{
 			m_activeAnimations.clear();
 		}
+
+		std::size_t tileset_index = 0;
 		for (const auto& ca : m_chunkArrays)
 		{
+			const tmx::Tileset* tset = tilesets.empty() ? nullptr : tilesets[tileset_index];
+			tileset_index += 1;
+
 			std::size_t idx = 0;
 			int xPos = static_cast<int>(getPosition().x / static_cast<float>(mapTileSize.x));
 			int yPos = static_cast<int>(getPosition().y / static_cast<float>(mapTileSize.y));
@@ -361,6 +373,8 @@ struct Chunk
 							&tile[3].texturecoord
 						);
 						ca->addTile(tile);
+
+						add_collision(owner, transform_tile_pos(tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds), bounds, *tset->getTile(m_chunkTileIDs[idx].ID));
 					}
 					idx++;
 				}
@@ -378,7 +392,7 @@ struct Chunk
 			{
 				ca->reset();
 			}
-			generateTiles();
+			generateTiles(false, {});
 		}
 	}
 
@@ -411,7 +425,7 @@ struct MapLayer
 	std::vector<std::unique_ptr<Chunk>> m_chunks;
 	mutable std::vector<Chunk*> m_visibleChunks;
 
-	MapLayer(const tmx::Map& map, std::size_t idx)
+	MapLayer(MapImpl* owner, const tmx::Map& map, std::size_t idx)
 	{
 		const auto& layers = map.getLayers();
 
@@ -487,6 +501,7 @@ struct MapLayer
 						tileCount.y = (bounds.height - static_cast<float>(y * m_chunkSize.y)) / static_cast<float>(map.getTileSize().y);
 					}
 					m_chunks.emplace_back(std::make_unique<Chunk>(
+						owner,
 						layer,
 						usedTileSets,
 						glm::vec2(x * m_chunkSize.x, y * m_chunkSize.y),
@@ -592,13 +607,13 @@ struct MapLayer
 };
 
 
-std::optional<MapLayer> make_layer(const tmx::Map& map, std::size_t idx)
+std::optional<MapLayer> make_layer(MapImpl* owner, const tmx::Map& map, std::size_t idx)
 {
 	const auto& layers = map.getLayers();
 	if (map.getOrientation() == tmx::Orientation::Orthogonal &&
 		idx < layers.size() && layers[idx]->getType() == tmx::Layer::Type::Tile)
 	{
-		return MapLayer{map, idx};
+		return MapLayer{owner, map, idx};
 	}
 	else
 	{
@@ -610,7 +625,27 @@ std::optional<MapLayer> make_layer(const tmx::Map& map, std::size_t idx)
 struct MapImpl
 {
 	std::vector<MapLayer> layers;
+	std::vector<Rectf> collisions;
 };
+
+
+void add_collision(MapImpl* impl, const glm::vec2& pos, const glm::vec2&, const tmx::Tileset::Tile& tile)
+{
+	const auto& objects = tile.objectGroup.getObjects();
+	if(objects.empty()) { return; }
+
+	if(objects.size() != 1)
+	{
+		std::cerr << "too many collisions: " << tile.imagePath << ": "
+			<< "id=" << tile.ID << " "
+			<< tile.imagePosition.x << " " << tile.imagePosition.y
+			<< " -> " << objects.size() << "\n";
+		return;
+	}
+
+	const auto& aabb = objects[0].getAABB();
+	impl->collisions.emplace_back(Rectf{aabb.width, aabb.height}.translate(pos.x, pos.y));
+}
 
 
 Map::Map()
@@ -627,7 +662,7 @@ void Map::load_from_map(const tmx::Map& map)
 	const auto& layers = map.getLayers();
 	for(std::size_t index=0; index < layers.size(); index+=1)
 	{
-		auto loaded = make_layer(map, index);
+		auto loaded = make_layer(impl.get(), map, index);
 		if(loaded)
 		{
 			impl->layers.emplace_back(std::move(*loaded));
@@ -651,3 +686,8 @@ void Map::render(render::SpriteBatch& batch, const Rectf& view)
 	}
 }
 
+
+const std::vector<Rectf>& Map::get_collisions() const
+{
+	return impl->collisions;
+}

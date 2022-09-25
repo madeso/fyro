@@ -19,4 +19,6 @@ struct Map
 	void load_from_map(const tmx::Map& map);
 	void update(float dt);
 	void render(render::SpriteBatch& batch, const Rectf& view);
+
+	const std::vector<Rectf>& get_collisions() const;
 };
