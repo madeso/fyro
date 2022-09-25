@@ -1,7 +1,7 @@
 var random = new fyro.Random();
 var BLOCK_SIZE = 50;
 var GAME_SIZE = 200;
-var PLAYER_SIZE = 32;
+var PLAYER_SIZE = 22;
 var RUN_TIMER = 0.1;
 
 fun abs(x)
@@ -44,23 +44,6 @@ class PlayerAnim
 }
 
 var pinkman = new PlayerAnim("Pink Man");
-
-class Block : Solid
-{
-	public fun init()
-	{
-		super();
-		this.set_size(10 + random.next_int(BLOCK_SIZE),
-			10 + random.next_int(BLOCK_SIZE));
-		this.x = 10 + random.next_int(GAME_SIZE - BLOCK_SIZE);
-		this.y = 10 + random.next_int(BLOCK_SIZE);
-	}
-
-	public fun render(cmd)
-	{
-		cmd.rect(fyro.rgb.light_green, this.x, this.y, this.width, this.height);
-	}
-}
 
 class Player : Actor
 {
@@ -156,11 +139,6 @@ class GameState
 		this.level.load_tmx("level1.tmx");
 		this.player = new Player();
 		this.level.add(this.player);
-
-		// for(var index=0; index < 10; index+=1)
-		// {
-		// 	this.level.add_solid(new Block());
-		// }
 	}
 
 	public fun update(dt)
