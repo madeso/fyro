@@ -145,12 +145,12 @@ struct AnimationState
 
 using RenderQuad = std::array<render::Vertex2, 4>;
 
-glm::vec2 transform_tile(const glm::vec2& src, const glm::ivec2&)
+glm::vec2 transform_tile(const glm::vec2& src, const glm::ivec2& size)
 {
 	return
 	{
-		src.x / 16.0f,
-		src.y / 16.0f
+		src.x / size.x,
+		1.0f - (src.y / size.y)
 	};
 }
 
@@ -231,8 +231,8 @@ struct Chunk
 		: m_animTiles(animTiles)
 	{
 		setPosition(position);
-		layerOpacity = layer.getOpacity() /  1.f * 255.f;
-		glm::vec4 vertColour = glm::vec4{200 ,200, 200, layerOpacity};
+		layerOpacity = layer.getOpacity();
+		glm::vec4 vertColour = glm::vec4{1.0f ,1.0f, 1.0f, layerOpacity};
 		auto offset = layer.getOffset();
 		layerOffset.x = static_cast<float>(offset.x);
 		layerOffset.y = static_cast<float>(offset.y);
