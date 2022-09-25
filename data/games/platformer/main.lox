@@ -78,7 +78,7 @@ class Player : Actor
 
 		// hope we don't collide here
 		this.x = 100;
-		this.y = 150;
+		this.y = 175;
 	}
 
 	public fun update(dt)
