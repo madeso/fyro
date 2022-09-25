@@ -18,7 +18,6 @@ std::shared_ptr<render::Texture> load_texture(const std::string& path);
 
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
-#include <tmxlite/detail/Log.hpp>
 
 
 int floor_to_int(float f)
@@ -247,8 +246,8 @@ struct Chunk
 		{
 			if(ts->getImagePath().empty())
 			{
-				tmx::Logger::log("This example does not support Collection of Images tilesets", tmx::Logger::Type::Info);
-				tmx::Logger::log("Chunks using " + ts->getName() + " will not be created", tmx::Logger::Type::Info);
+				std::cout << "This example does not support Collection of Images tilesets\n";
+				std::cout << "Chunks using " + ts->getName() + " will not be created\n";
 				continue;
 			}
 
@@ -559,7 +558,7 @@ struct MapLayer
 				for (auto x = left; x < right; ++x)
 				{
 					std::size_t idx = static_cast<std::size_t>(y * m_chunkCount.x + x);
-					if (idx >= 0u && idx < m_chunks.size() && !m_chunks[idx]->empty())
+					if (idx < m_chunks.size() && !m_chunks[idx]->empty())
 					{
 						visible.push_back(m_chunks[idx].get());
 					}
