@@ -153,6 +153,7 @@ class GameState
 	public fun start()
 	{
 		this.level = new fyro.Level();
+		this.level.load_tmx("level1.tmx");
 		this.player = new Player();
 		this.level.add(this.player);
 

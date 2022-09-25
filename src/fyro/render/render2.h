@@ -15,6 +15,12 @@ struct Render2;
 
 struct Vertex2
 {
+	glm::vec2 position;
+	glm::vec4 color;
+	glm::vec2 texturecoord;
+};
+struct Vertex3
+{
 	glm::vec3 position;
 	glm::vec4 color;
 	glm::vec2 texturecoord;
@@ -42,6 +48,7 @@ struct SpriteBatch
 	void operator=(SpriteBatch&&) = delete;
 
 	void quad(std::optional<Texture*> texture, const Vertex2& v0, const Vertex2& v1, const Vertex2& v2, const Vertex2& v3);
+	void quad(std::optional<Texture*> texture, const Vertex3& v0, const Vertex3& v1, const Vertex3& v2, const Vertex3& v3);
 	void quadf(std::optional<Texture*> texture, const Rectf& scr, const std::optional<Rectf>& texturecoord, bool flip_x, const glm::vec4& tint = glm::vec4(1.0f));
 	void quadi(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, bool flip_x, const glm::vec4& tint = glm::vec4(1.0f));
 

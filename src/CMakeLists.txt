@@ -32,6 +32,7 @@ set(src_base
 	fyro/windows.sdl.convert.cc fyro/windows.sdl.convert.h
 
 	fyro/collision2.cc fyro/collision2.h
+	fyro/tiles.cc fyro/tiles.h
 
 	fyro/main.cc
 )
@@ -63,6 +64,7 @@ target_link_libraries(fyro
 		lox::liblox
 		external::json
 		external::physfs
+		external::tmxlite
 	PRIVATE
 		project_options
 		project_warnings

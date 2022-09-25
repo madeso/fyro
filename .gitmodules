@@ -22,3 +22,6 @@
 [submodule "external/physfs"]
 	path = external/physfs
 	url = git@github.com:icculus/physfs.git
+[submodule "external/tmxlite"]
+	path = external/tmxlite
+	url = git@github.com:fallahn/tmxlite.git

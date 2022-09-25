@@ -94,7 +94,7 @@ SpriteBatch::~SpriteBatch()
 }
 
 
-void add_vertex(SpriteBatch* batch, const Vertex2& v)
+void add_vertex(SpriteBatch* batch, const Vertex3& v)
 {
 	batch->data.push_back(v.position.x);
 	batch->data.push_back(v.position.y);
@@ -117,7 +117,18 @@ Rectf get_sprite(const Texture& texture, const Recti& ri)
 	return {r.left * w, 1-r.top * h, r.right * w, 1-r.bottom * h};
 }
 
+
 void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex2& v0, const Vertex2& v1, const Vertex2& v2, const Vertex2& v3)
+{
+	auto c = [](const Vertex2& v) -> Vertex3
+	{
+		return Vertex3{{v.position.x, v.position.y, 0.0f}, v.color, v.texturecoord};
+	};
+	quad(texture_argument, c(v0), c(v1), c(v2), c(v3));
+}
+
+
+void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex3& v0, const Vertex3& v1, const Vertex3& v2, const Vertex3& v3)
 {
 	Texture* texture = texture_argument.value_or(&white_texture);
 

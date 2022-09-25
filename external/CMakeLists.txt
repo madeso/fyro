@@ -151,3 +151,34 @@ target_include_directories(external_physfs SYSTEM
 )
 add_library(external::physfs ALIAS external_physfs)
 
+
+
+
+###################################################################################################
+# tmxlite
+add_library(external_tmxlite STATIC
+	tmxlite/tmxlite/src/detail/pugixml.cpp
+	tmxlite/tmxlite/src/FreeFuncs.cpp
+	tmxlite/tmxlite/src/ImageLayer.cpp
+	tmxlite/tmxlite/src/Map.cpp
+	tmxlite/tmxlite/src/miniz.c
+	tmxlite/tmxlite/src/Object.cpp
+	tmxlite/tmxlite/src/ObjectGroup.cpp
+	tmxlite/tmxlite/src/Property.cpp
+	tmxlite/tmxlite/src/TileLayer.cpp
+	tmxlite/tmxlite/src/LayerGroup.cpp
+	tmxlite/tmxlite/src/Tileset.cpp
+	tmxlite/tmxlite/src/ObjectTypes.cpp
+)
+
+# target_compile_definitions(external_tmxlite PRIVATE "PHYSFS_STATIC")
+
+target_include_directories(external_tmxlite SYSTEM
+    PUBLIC
+        tmxlite/tmxlite/include
+)
+add_library(external::tmxlite ALIAS external_tmxlite)
+
+
+
+

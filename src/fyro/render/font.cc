@@ -109,10 +109,10 @@ struct TextPrinter
 		batch->quad
 		(
 			texture,
-			Vertex2{{q.x0, q.y0, 0.0f}, color, {q.s0, q.t0}},
-			Vertex2{{q.x1, q.y0, 0.0f}, color, {q.s1, q.t0}},
-			Vertex2{{q.x1, q.y1, 0.0f}, color, {q.s1, q.t1}},
-			Vertex2{{q.x0, q.y1, 0.0f}, color, {q.s0, q.t1}}
+			Vertex3{{q.x0, q.y0, 0.0f}, color, {q.s0, q.t0}},
+			Vertex3{{q.x1, q.y0, 0.0f}, color, {q.s1, q.t0}},
+			Vertex3{{q.x1, q.y1, 0.0f}, color, {q.s1, q.t1}},
+			Vertex3{{q.x0, q.y1, 0.0f}, color, {q.s0, q.t1}}
 		);
 	}
 };

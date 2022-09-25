@@ -14,10 +14,25 @@
 #include "fyro/render/font.h"
 #include "fyro/render/texture.h"
 #include "fyro/collision2.h"
+#include "fyro/tiles.h"
 
+#include "tmxlite/Map.hpp"
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+
+std::string get_dir_from_file(const std::string& path)
+{
+	if(const auto slash = path.rfind('/'); slash != std::string::npos)
+	{
+		return path.substr(0, slash-1);
+	}
+	else
+	{
+		return path;
+	}
+}
 
 
 int to_int(lox::Ti ti)
@@ -126,12 +141,12 @@ std::optional<std::vector<char>> read_file_to_bytes_or_none(const std::string& p
 }
 
 
-Exception missing_file_exception(const std::string& /*path*/)
+Exception missing_file_exception(const std::string& path)
 {
 	// todo(Gustav): split path and find files in dir
 	return physfs_exception("unable to open file")
 		.append("found files")
-		.append(physfs_files_in_dir(""))
+		.append(physfs_files_in_dir(get_dir_from_file(path)))
 		;
 }
 
@@ -1332,17 +1347,37 @@ struct ScriptSolidBase
 	std::shared_ptr<ScriptSolidImpl> impl;
 };
 
-struct ScriptLevel
+struct ScriptLevelData
 {
 	fyro::Level level;
+	Map tiles;
+};
+
+struct ScriptLevel
+{
+	ScriptLevel()
+		: data(std::make_shared<ScriptLevelData>())
+	{
+	}
+
+	std::shared_ptr<ScriptLevelData> data;
+
+	void load_tmx(const std::string& path)
+	{
+		auto source = read_file_to_string(path);
+		tmx::Map map;
+		const auto was_loaded = map.loadFromString(source, get_dir_from_file(path));
+		if(was_loaded == false ) { throw Exception{{"failed to parse tmx file"}}; }
+		data->tiles.load_from_map(map);
+	}
 
 	void add_actor(std::shared_ptr<lox::Instance> x)
 	{
 		auto dispatcher = std::make_shared<ScriptActor>(x);
 		auto actor = lox::get_derived<ScriptActorBase>(x);
 		actor->impl->dispatcher = dispatcher;
-		actor->impl->level = &level;
-		level.actors.emplace_back(actor->impl);
+		actor->impl->level = &data->level;
+		data->level.actors.emplace_back(actor->impl);
 	}
 
 	void add_solid(std::shared_ptr<lox::Instance> x)
@@ -1350,8 +1385,8 @@ struct ScriptLevel
 		auto dispatcher = std::make_shared<ScriptSolid>(x);
 		auto solid = lox::get_derived<ScriptSolidBase>(x);
 		solid->impl->dispatcher = dispatcher;
-		solid->impl->level = &level;
-		level.solids.emplace_back(solid->impl);
+		solid->impl->level = &data->level;
+		data->level.solids.emplace_back(solid->impl);
 	}
 };
 
@@ -1514,6 +1549,13 @@ struct ExampleGame : public Game
 				r.add_actor(inst);
 				return lox::make_nil();
 			})
+			.add_function("load_tmx", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto path = ah.require_string();
+				ah.complete();
+				r.load_tmx(path);
+				return lox::make_nil();
+			})
 			.add_function("add_solid", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto inst = ah.require_instance();
@@ -1525,14 +1567,15 @@ struct ExampleGame : public Game
 			{
 				auto dt = static_cast<float>(ah.require_float());
 				ah.complete();
-				r.level.update(dt);
+				r.data->level.update(dt);
 				return lox::make_nil();
 			})
 			.add_function("render", [](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto rend = ah.require_object();
+				auto rend = ah.require_native<RenderArg>();
 				ah.complete();
-				r.level.render(rend);
+				r.data->tiles.render(*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace);
+				r.data->level.render(rend.instance);
 				return lox::make_nil();
 			})
 			;
