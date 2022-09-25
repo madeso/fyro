@@ -145,12 +145,21 @@ struct AnimationState
 
 using RenderQuad = std::array<render::Vertex2, 4>;
 
-glm::vec2 transform_tile(const glm::vec2& src, const glm::ivec2& size)
+glm::vec2 transform_tile_pos(const glm::vec2& src, const glm::vec2& bounds)
 {
 	return
 	{
-		src.x / size.x,
-		1.0f - (src.y / size.y)
+		src.x,
+		bounds.y - src.y
+	};
+}
+
+glm::vec2 transform_tile_uv(const glm::vec2& src, const glm::ivec2& size)
+{
+	return
+	{
+		src.x / static_cast<float>(size.x),
+		1.0f - (src.y / static_cast<float>(size.y))
 	};
 }
 
@@ -204,6 +213,9 @@ struct ChunkArray
 
 struct Chunk
 {
+	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;    // animation catalogue
+	glm::vec2 bounds;
+
 	glm::vec2 position;
 	float layerOpacity;     // opacity of the layer
 	glm::vec2 layerOffset;   // Layer offset
@@ -211,7 +223,6 @@ struct Chunk
 	glm::ivec2 chunkTileCount;   // chunk tilecount
 	std::vector<tmx::TileLayer::Tile> m_chunkTileIDs; // stores all tiles in this chunk for later manipulation
 	std::vector<glm::vec4> m_chunkColors; // stores colors for extended color effects
-	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;    // animation catalogue
 	std::vector<AnimationState> m_activeAnimations;     // Animations to be done in this chunk
 	std::vector<std::unique_ptr<ChunkArray>> m_chunkArrays;
 
@@ -226,11 +237,14 @@ struct Chunk
 		const glm::ivec2& tileCount,
 		const glm::ivec2& tileSize,
 		int rowSize,
+		const glm::vec2& abounds,
 		const std::map<std::uint32_t, tmx::Tileset::Tile>& animTiles
 	)
 		: m_animTiles(animTiles)
+		, bounds(abounds)
 	{
 		setPosition(position);
+		std::cout << "position " << position.x << " " << position.y << "\n";
 		layerOpacity = layer.getOpacity();
 		glm::vec4 vertColour = glm::vec4{1.0f ,1.0f, 1.0f, layerOpacity};
 		auto offset = layer.getOffset();
@@ -315,27 +329,27 @@ struct Chunk
 						{
 							::render::Vertex2
 							{
-								tileOffset - getPosition(),
+								transform_tile_pos(tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds),
 								m_chunkColors[idx],
-								transform_tile(tileIndex, ca->texSize)
+								transform_tile_uv(tileIndex + glm::vec2(0.f, ca->tileSetSize.y), ca->texSize)
 							},
 							::render::Vertex2
 							{
-								tileOffset - getPosition() + glm::vec2(ca->tileSetSize.x, 0.f),
+								transform_tile_pos(tileOffset + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), bounds),
 								m_chunkColors[idx],
-								transform_tile(tileIndex + glm::vec2(ca->tileSetSize.x, 0.f), ca->texSize)
+								transform_tile_uv(tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), ca->texSize)
 							},
 							::render::Vertex2
 							{
-								tileOffset - getPosition() + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y),
+								transform_tile_pos(tileOffset + glm::vec2(ca->tileSetSize.x, 0.f), bounds),
 								m_chunkColors[idx],
-								transform_tile(tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), ca->texSize)
+								transform_tile_uv(tileIndex + glm::vec2(ca->tileSetSize.x, 0.f), ca->texSize)
 							},
 							::render::Vertex2
 							{
-								tileOffset - getPosition() + glm::vec2(0.f, ca->tileSetSize.y),
+								transform_tile_pos(tileOffset, bounds),
 								m_chunkColors[idx],
-								transform_tile(tileIndex + glm::vec2(0.f, ca->tileSetSize.y), ca->texSize)
+								transform_tile_uv(tileIndex, ca->texSize)
 							}
 						};
 						doFlips
@@ -392,7 +406,7 @@ struct MapLayer
 	glm::ivec2 m_chunkSize;
 	glm::ivec2 m_chunkCount;
 	glm::ivec2 m_MapTileSize;   // general Tilesize of Map
-	Rectf m_globalBounds = Rectf{0.0f, 0.0f};
+	glm::vec2 m_globalBounds = {0.0f, 0.0f};
 
 	std::vector<std::unique_ptr<Chunk>> m_chunks;
 	mutable std::vector<Chunk*> m_visibleChunks;
@@ -413,6 +427,9 @@ struct MapLayer
 		m_MapTileSize.x = static_cast<int>(map.getTileSize().x);
 		m_MapTileSize.y = static_cast<int>(map.getTileSize().y);
 		const auto& layer = layers[idx]->getLayerAs<tmx::TileLayer>();
+
+		auto mapSize = map.getBounds();
+		m_globalBounds = glm::vec2{mapSize.width, mapSize.height};
 		
 		// create chunks
 		{
@@ -476,15 +493,12 @@ struct MapLayer
 						tileCount,
 						tileSize,
 						map.getTileCount().x,
+						m_globalBounds,
 						map.getAnimatedTiles()
 					));
 				}
 			}
 		}
-		//
-
-		auto mapSize = map.getBounds();
-		m_globalBounds = Rectf{mapSize.width, mapSize.height};
 	}
 
 	~MapLayer() = default;
