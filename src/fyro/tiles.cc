@@ -144,20 +144,31 @@ struct AnimationState
 	std::uint8_t flipFlags;
 };
 
-using RenderQuad = std::array<render::Vertex2, 4u>;
+using RenderQuad = std::array<render::Vertex2, 4>;
+
+glm::vec2 transform_tile(const glm::vec2& src, const glm::ivec2&)
+{
+	return
+	{
+		src.x / 16.0f,
+		src.y / 16.0f
+	};
+}
 
 struct ChunkArray
 {
+	std::shared_ptr<render::Texture> m_texture;
+	glm::ivec2 texSize;
+
 	tmx::Vector2u tileSetSize;
 	glm::ivec2 tsTileCount;
 	std::uint32_t m_firstGID, m_lastGID;
-	std::shared_ptr<render::Texture> m_texture;
 	std::vector<RenderQuad> tiles;
 
 	ChunkArray(std::shared_ptr<render::Texture> t, const tmx::Tileset& ts)
 		: m_texture(t)
+		, texSize(t->width, t->height)
 	{
-		glm::ivec2 texSize = {m_texture->width, m_texture->height};
 		tileSetSize = ts.getTileSize();
 		tsTileCount.x = texSize.x / static_cast<int>(tileSetSize.x);
 		tsTileCount.y = texSize.y / static_cast<int>(tileSetSize.y);
@@ -175,6 +186,11 @@ struct ChunkArray
 	}
 	void addTile(const RenderQuad& tile)
 	{
+		// std::cout << "adding tile:\n";
+		// for(auto& t: tile)
+		// {
+		// 	std::cout << "    (" << t.texturecoord.x << ", " << t.texturecoord.y << ")\n";
+		// }
 		tiles.emplace_back(tile);
 	}
 
@@ -186,8 +202,6 @@ struct ChunkArray
 		}
 	}
 };
-
-std::shared_ptr<render::Texture> load_texture(const std::string& path);
 
 struct Chunk
 {
@@ -237,6 +251,8 @@ struct Chunk
 				tmx::Logger::log("Chunks using " + ts->getName() + " will not be created", tmx::Logger::Type::Info);
 				continue;
 			}
+
+			// std::cout << "loading tile texture " << ts->getImagePath() << "\n";
 			m_chunkArrays.emplace_back(std::make_unique<ChunkArray>(load_texture(ts->getImagePath()), *ts));
 		}
 		int xPos = static_cast<int>(position.x / static_cast<float>(tileSize.x));
@@ -302,25 +318,25 @@ struct Chunk
 							{
 								tileOffset - getPosition(),
 								m_chunkColors[idx],
-								tileIndex
+								transform_tile(tileIndex, ca->texSize)
 							},
 							::render::Vertex2
 							{
 								tileOffset - getPosition() + glm::vec2(ca->tileSetSize.x, 0.f),
 								m_chunkColors[idx],
-								tileIndex + glm::vec2(ca->tileSetSize.x, 0.f)
+								transform_tile(tileIndex + glm::vec2(ca->tileSetSize.x, 0.f), ca->texSize)
 							},
 							::render::Vertex2
 							{
 								tileOffset - getPosition() + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y),
 								m_chunkColors[idx],
-								tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y)
+								transform_tile(tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), ca->texSize)
 							},
 							::render::Vertex2
 							{
 								tileOffset - getPosition() + glm::vec2(0.f, ca->tileSetSize.y),
 								m_chunkColors[idx],
-								tileIndex + glm::vec2(0.f, ca->tileSetSize.y)
+								transform_tile(tileIndex + glm::vec2(0.f, ca->tileSetSize.y), ca->texSize)
 							}
 						};
 						doFlips

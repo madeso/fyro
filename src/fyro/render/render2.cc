@@ -161,10 +161,10 @@ void SpriteBatch::quadf(std::optional<Texture*> texture, const Rectf& scr, const
 	quad
 	(
 		texture,
-		{{scr.left,  scr.bottom, 0.0f}, tint, {flip_x ? tc.right : tc.left,  tc.bottom}},
-		{{scr.right, scr.bottom, 0.0f}, tint, {flip_x ? tc.left  : tc.right, tc.bottom}},
-		{{scr.right, scr.top,    0.0f}, tint, {flip_x ? tc.left  : tc.right, tc.top}},
-		{{scr.left,  scr.top,    0.0f}, tint, {flip_x ? tc.right : tc.left,  tc.top}}
+		{{scr.left,  scr.bottom }, tint, {flip_x ? tc.right : tc.left,  tc.bottom}},
+		{{scr.right, scr.bottom }, tint, {flip_x ? tc.left  : tc.right, tc.bottom}},
+		{{scr.right, scr.top    }, tint, {flip_x ? tc.left  : tc.right, tc.top}},
+		{{scr.left,  scr.top    }, tint, {flip_x ? tc.right : tc.left,  tc.top}}
 	);
 }
 
