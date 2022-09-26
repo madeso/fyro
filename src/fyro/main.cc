@@ -283,8 +283,9 @@ struct RenderData
 {
 	const render::RenderCommand& rc;
 	std::optional<render::RenderLayer2> layer;
+	glm::vec2 focus;
 
-	explicit RenderData(const render::RenderCommand& rr) : rc(rr) {}
+	explicit RenderData(const render::RenderCommand& rr) : rc(rr), focus(0, 0) {}
 	~RenderData()
 	{
 		if(layer)
@@ -1681,7 +1682,9 @@ struct ExampleGame : public Game
 				}
 				
 				const auto translation = glm::vec3{-focusx, -focusy, 0} + center_screen;
-				r.data->rc.set_camera(glm::translate(glm::mat4(1.0f), translation));
+				const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
+				r.data->rc.set_camera(camera_matrix);
+				r.data->focus = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
 				return lox::make_nil();
 			})
 			.add_function("clear", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -1695,7 +1698,7 @@ struct ExampleGame : public Game
 				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
 				
 				render::RenderLayer2& layer = *data->layer;
-				layer.batch->quadf({}, layer.viewport_aabb_in_worldspace, {}, false, {color->r, color->g, color->b, 1.0f});
+				layer.batch->quadf({}, layer.viewport_aabb_in_worldspace.translate(data->focus), {}, false, {color->r, color->g, color->b, 1.0f});
 				return lox::make_nil();
 			})
 			.add_function("rect", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
