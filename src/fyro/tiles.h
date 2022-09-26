@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "tmxlite/Map.hpp"
 
@@ -21,4 +22,5 @@ struct Map
 	void render(render::SpriteBatch& batch, const Rectf& view);
 
 	const std::vector<Rectf>& get_collisions() const;
+	std::optional<Rectf> get_bounds() const;
 };

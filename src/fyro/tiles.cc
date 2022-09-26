@@ -626,6 +626,7 @@ struct MapImpl
 {
 	std::vector<MapLayer> layers;
 	std::vector<Rectf> collisions;
+	std::optional<Rectf> bounds;
 };
 
 
@@ -668,6 +669,9 @@ void Map::load_from_map(const tmx::Map& map)
 			impl->layers.emplace_back(std::move(*loaded));
 		}
 	}
+
+	const auto bounds = map.getBounds();
+	impl->bounds = Rectf{bounds.width, bounds.height};
 }
 
 void Map::update(float dt)
@@ -690,4 +694,9 @@ void Map::render(render::SpriteBatch& batch, const Rectf& view)
 const std::vector<Rectf>& Map::get_collisions() const
 {
 	return impl->collisions;
+}
+
+std::optional<Rectf> Map::get_bounds() const
+{
+	return impl->bounds;
 }

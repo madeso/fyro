@@ -155,6 +155,7 @@ class GameState
 	public fun render(cmd)
 	{
 		cmd.windowbox(GAME_SIZE, GAME_SIZE);
+		cmd.look_at(this.player.x, this.player.y, this.level);
 		cmd.clear(fyro.rgb.dark_gray);
 		this.level.render(cmd);
 	}

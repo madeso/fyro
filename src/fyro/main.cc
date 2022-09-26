@@ -1445,7 +1445,7 @@ struct ExampleGame : public Game
 		keyboards.mappings.emplace_back(create_default_mapping_for_player1());
 		input.add_keyboard( std::make_shared<InputDevice_Keyboard>(&keyboards, 0) );
 		bind_functions();
-	}
+	}			
 
 	void on_imgui() override
 	{
@@ -1657,6 +1657,31 @@ struct ExampleGame : public Game
 				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
 
 				r.data->layer = render::with_layer2(r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height});
+				return lox::make_nil();
+			})
+			.add_function("look_at", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto focusx = static_cast<float>(ah.require_float());
+				auto focusy = static_cast<float>(ah.require_float());
+				auto level = ah.require_native<ScriptLevel>();
+				ah.complete();
+
+				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
+
+				const auto& aabb = r.data->layer->viewport_aabb_in_worldspace;
+				const auto center_screen = glm::vec3{0.5f*aabb.get_width(), 0.5f*aabb.get_height(), 0};
+
+				if(auto bounds = level->data->tiles.get_bounds(); bounds)
+				{
+					focusx = std::max(focusx, bounds->left + center_screen.x);
+					focusx = std::min(focusx, bounds->right - center_screen.x);
+
+					focusy = std::min(focusy, bounds->top - center_screen.y);
+					focusy = std::max(focusy, bounds->bottom + center_screen.y);
+				}
+				
+				const auto translation = glm::vec3{-focusx, -focusy, 0} + center_screen;
+				r.data->rc.set_camera(glm::translate(glm::mat4(1.0f), translation));
 				return lox::make_nil();
 			})
 			.add_function("clear", [](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>

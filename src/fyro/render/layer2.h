@@ -56,6 +56,8 @@ struct RenderCommand
 
 	// tood(Gustav): add clear to color function
 	void clear(const glm::vec3& color, const LayoutData& ld) const;
+
+	void set_camera(const glm::mat4& camera) const;
 };
 
 

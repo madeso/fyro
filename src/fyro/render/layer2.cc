@@ -49,10 +49,15 @@ RenderLayer2 create_layer2(const RenderCommand& rc, const ViewportDef& vp)
 
 	rc.render->quad_shader.use();
 	rc.render->quad_shader.set_mat(rc.render->view_projection_uniform, projection);
-	rc.render->quad_shader.set_mat(rc.render->transform_uniform, camera);
+	rc.set_camera(camera);
 
 	// todo(Gustav): transform viewport according to the camera
 	return RenderLayer2{create_layer(vp), &rc.render->batch};
+}
+
+void RenderCommand::set_camera(const glm::mat4& camera) const
+{
+	render->quad_shader.set_mat(render->transform_uniform, camera);
 }
 
 RenderLayer3 create_layer3(const RenderCommand& rc, const ViewportDef& vp)
