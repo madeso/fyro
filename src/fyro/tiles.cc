@@ -222,7 +222,7 @@ struct Chunk
 	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;    // animation catalogue
 	glm::vec2 bounds;
 
-	glm::vec2 position;
+	glm::vec2 m_position;
 	float layerOpacity;     // opacity of the layer
 	glm::vec2 layerOffset;   // Layer offset
 	glm::ivec2 mapTileSize;   // general Tilesize of Map
@@ -232,8 +232,8 @@ struct Chunk
 	std::vector<AnimationState> m_activeAnimations;     // Animations to be done in this chunk
 	std::vector<std::unique_ptr<ChunkArray>> m_chunkArrays;
 
-	void setPosition(const glm::vec2& p) { position = p; }
-	glm::vec2 getPosition() const { return position; }
+	void setPosition(const glm::vec2& p) { m_position = p; }
+	glm::vec2 getPosition() const { return m_position; }
 
 	Chunk
 	(
@@ -436,8 +436,8 @@ struct MapLayer
 		//round the chunk size to the nearest tile
 		// const auto tileSize = map.getTileSize();
 		glm::ivec2 tileSize(map.getTileSize().x, map.getTileSize().y);
-		m_chunkSize.x = floor_to_int(static_cast<float>(design_chunk_size.x) / static_cast<float>(tileSize.x)) * static_cast<int>(tileSize.x);
-		m_chunkSize.y = floor_to_int(static_cast<float>(design_chunk_size.y) / static_cast<float>(tileSize.y)) * static_cast<int>(tileSize.y);
+		m_chunkSize.x = floor_to_int(static_cast<float>(design_chunk_size.x) / static_cast<float>(tileSize.x)) * tileSize.x;
+		m_chunkSize.y = floor_to_int(static_cast<float>(design_chunk_size.y) / static_cast<float>(tileSize.y)) * tileSize.y;
 		m_MapTileSize.x = static_cast<int>(map.getTileSize().x);
 		m_MapTileSize.y = static_cast<int>(map.getTileSize().y);
 		const auto& layer = layers[idx]->getLayerAs<tmx::TileLayer>();
