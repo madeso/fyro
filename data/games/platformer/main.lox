@@ -142,8 +142,19 @@ class Player : Actor
 		{
 			this.floor_timer += dt;
 		}
+
 		if(collided)
 		{
+			if(this.dy < -160)
+			{
+				this.input.run_haptics(1.0, 0.2);
+				// print this.dy;
+			}
+			else if(this.dy < -105)
+			{
+				this.input.run_haptics(0.25, 0.2);
+				// print this.dy;
+			}
 			this.dy = 0;
 		}
 
