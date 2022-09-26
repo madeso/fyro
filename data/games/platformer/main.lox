@@ -4,6 +4,9 @@ var GAME_SIZE = 200;
 var PLAYER_SIZE = 22;
 var RUN_TIMER = 0.1;
 var MAX_SLIDE = -20;
+var ACCELERATION = 3;
+var DEACC = 2;
+
 fun abs(x)
 {
 	if(x >= 0) { return x;}
@@ -20,6 +23,28 @@ fun sign(x)
 {
 	if(x >= 0) { return 1;}
 	else { return -1; }
+}
+
+fun to_zero(adx, dt, anim)
+{
+	var dx = adx - sign(adx) * dt * anim;
+	if(sign(adx) != sign(dx)) { return 0; }
+	if(abs(dx) < 0.1) { return 0; }
+	return dx;
+}
+
+fun keep_within(min, val, max)
+{
+	if(val < min) { return min; }
+	if(val > max) { return max; }
+	return val;
+}
+
+fun change_keep_within(min, val, change, max)
+{
+	if((val+change) < min) { if(val < min) { return val;} else { return min;} }
+	if((val+change) > max) { if(val > max) { return val;} else { return max;} }
+	return val+change;
 }
 
 class PlayerAnim
@@ -59,6 +84,7 @@ var pinkman = new PlayerAnim("Pink Man");
 class Player : Actor
 {
 	public var input;
+	public var dx = 0;
 	public var dy = 0;
 	public var facing_right = true;
 
@@ -82,10 +108,20 @@ class Player : Actor
 		var speed = 50;
 		var collided;
 
-		collided = this.move_x(speed * dt * this.input.current.axis_left_x);
+		if(abs(this.input.current.axis_left_x) > 0.1)
+		{
+			this.dx = change_keep_within(-1, this.dx, this.input.current.axis_left_x * dt * ACCELERATION, 1);
+		}
+		else
+		{
+			this.dx = to_zero(this.dx, dt, DEACC);
+		}
+
+		collided = this.move_x(speed * dt * this.dx);
 		if(collided)
 		{
 			this.wall_timer = 0;
+			this.dx = 0;
 
 			// enable sliding
 			this.dy = max(this.dy, MAX_SLIDE);
@@ -131,7 +167,8 @@ class Player : Actor
 			}
 			else if(this.wall_timer < 0.1)
 			{
-				this.dy = 70;
+				this.dy = 90;
+				this.dx = -1 * sign(this.input.current.axis_left_x);
 			}
 		}
 	}
