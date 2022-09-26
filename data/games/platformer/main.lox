@@ -3,11 +3,17 @@ var BLOCK_SIZE = 50;
 var GAME_SIZE = 200;
 var PLAYER_SIZE = 22;
 var RUN_TIMER = 0.1;
-
+var MAX_SLIDE = -20;
 fun abs(x)
 {
 	if(x >= 0) { return x;}
 	else { return -x; }
+}
+
+fun max(lhs, rhs)
+{
+	if(lhs < rhs) { return rhs; }
+	else { return lhs; }
 }
 
 fun sign(x)
@@ -22,6 +28,7 @@ class PlayerAnim
 	public var run;
 	public var jump;
 	public var fall;
+	public var wall;
 
 	public fun init(name)
 	{
@@ -40,6 +47,10 @@ class PlayerAnim
 		this.fall = fyro.load_sprite("gfx/Main Characters/" + name + "/Fall (32x32).png", 1, 1, 0.05, []);
 		this.fall.set_size(32, 32);
 		this.fall.align(0.5, 0);
+
+		this.wall = fyro.load_sprite("gfx/Main Characters/" + name + "/Wall Jump (32x32).png", 5, 1, 0.05, []);
+		this.wall.set_size(32, 32);
+		this.wall.align(0.5, 0);
 	}
 }
 
@@ -53,6 +64,7 @@ class Player : Actor
 
 	public var run_timer = 0;
 	public var floor_timer = 0;
+	public var wall_timer = 0;
 
 	public fun init()
 	{
@@ -68,17 +80,35 @@ class Player : Actor
 	{
 		var gravity = 160;
 		var speed = 50;
-		this.dy -= dt * gravity;
-		this.move_x(speed * dt * this.input.current.axis_left_x);
-		var collided = this.move_y(this.dy * dt);
+		var collided;
+
+		collided = this.move_x(speed * dt * this.input.current.axis_left_x);
 		if(collided)
 		{
-			this.dy = 0;
+			this.wall_timer = 0;
+
+			// enable sliding
+			this.dy = max(this.dy, MAX_SLIDE);
+		}
+		else
+		{
+			this.wall_timer += dt;
+		}
+		
+		this.dy -= dt * gravity;
+
+		collided = this.move_y(this.dy * dt);
+		if(collided and this.dy < 10)
+		{
 			this.floor_timer = 0;
 		}
 		else
 		{
 			this.floor_timer += dt;
+		}
+		if(collided)
+		{
+			this.dy = 0;
 		}
 
 		if(this.run_timer > 0)
@@ -95,7 +125,14 @@ class Player : Actor
 
 		if(this.input.current.button_x and this.input.last.button_x == false)
 		{
-			this.dy = 100;
+			if(this.floor_timer < 0.1)
+			{
+				this.dy = 100;
+			}
+			else if(this.wall_timer < 0.1)
+			{
+				this.dy = 70;
+			}
 		}
 	}
 
@@ -118,6 +155,10 @@ class Player : Actor
 			{
 				anim = char.fall;
 			}
+		}
+		if(this.wall_timer < 0.2 and this.dy <= MAX_SLIDE)
+		{
+			anim = char.wall;
 		}
 		cmd.sprite(anim, this.x, this.y, !this.facing_right, false);
 	}
