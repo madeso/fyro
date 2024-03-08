@@ -49,13 +49,13 @@ fun change_keep_within(min, val, change, max)
 
 class PlayerAnim
 {
-	public var idle;
-	public var run;
-	public var jump;
-	public var fall;
-	public var wall;
+	var idle;
+	var run;
+	var jump;
+	var fall;
+	var wall;
 
-	public fun init(name)
+	fun init(name)
 	{
 		this.idle = fyro.load_sprite("gfx/Main Characters/" + name + "/Idle (32x32).png", 11, 1, 0.05, []);
 		this.idle.set_size(32, 32);
@@ -83,16 +83,16 @@ var pinkman = new PlayerAnim("Pink Man");
 
 class Player : Actor
 {
-	public var input;
-	public var dx = 0;
-	public var dy = 0;
-	public var facing_right = true;
+	var input;
+	var dx = 0;
+	var dy = 0;
+	var facing_right = true;
 
-	public var run_timer = 0;
-	public var floor_timer = 0;
-	public var wall_timer = 0;
+	var run_timer = 0;
+	var floor_timer = 0;
+	var wall_timer = 0;
 
-	public fun init()
+	fun init()
 	{
 		super();
 		this.set_lrud(-7, 7, PLAYER_SIZE, 0);
@@ -102,7 +102,7 @@ class Player : Actor
 		this.y = 175;
 	}
 
-	public fun update(dt)
+	fun update(dt)
 	{
 		var gravity = 160;
 		var speed = 50;
@@ -184,7 +184,7 @@ class Player : Actor
 		}
 	}
 
-	public fun render(cmd)
+	fun render(cmd)
 	{
 		var char = pinkman;
 		// cmd.rect(fyro.rgb.red, this.x, this.y, this.width, this.height);
@@ -214,15 +214,15 @@ class Player : Actor
 
 class GameState
 {
-	public var level;
-	public var player;
+	var level;
+	var player;
 
-	public fun init()
+	fun init()
 	{
 		this.start();
 	}
 
-	public fun start()
+	fun start()
 	{
 		this.level = new fyro.Level();
 		this.level.load_tmx("level1.tmx");
@@ -230,7 +230,7 @@ class GameState
 		this.level.add(this.player);
 	}
 
-	public fun update(dt)
+	fun update(dt)
 	{
 		this.player.input = fyro.get_input();
 		this.level.update(dt);
@@ -241,7 +241,7 @@ class GameState
 		}
 	}
 
-	public fun render(cmd)
+	fun render(cmd)
 	{
 		cmd.windowbox(GAME_SIZE, GAME_SIZE);
 		cmd.look_at(this.player.x, this.player.y, this.level);

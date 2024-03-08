@@ -4,10 +4,10 @@
 
 class Point
 {
-	public var x;
-	public var y;
+	var x;
+	var y;
 
-	public fun init(x, y)
+	fun init(x, y)
 	{
 		this.x = x;
 		this.y = y;
@@ -17,33 +17,33 @@ class Point
 class GameState
 {
 	// player x y
-	public var px = 10;
-	public var py = 10;
+	var px = 10;
+	var py = 10;
 
 	// input
-	public var xv = 0;
-	public var yv = 0;
+	var xv = 0;
+	var yv = 0;
 
 	// game scale
-	public var gs = 20;
+	var gs = 20;
 
 	// tile count
-	public var tc = 20;
+	var tc = 20;
 
 	// apple x y
-	public var ax = 15;
-	public var ay = 15;
+	var ax = 15;
+	var ay = 15;
 
-	public var trail = [];
-	public var tail = 5;
+	var trail = [];
+	var tail = 5;
 
-	public var accum = 0.0;
+	var accum = 0.0;
 
-	public var random = new fyro.Random();
+	var random = new fyro.Random();
 
-	public var playing = false;
+	var playing = false;
 
-	public fun update(dt)
+	fun update(dt)
 	{
 		var upper = 0.8;
 		var time = 0.3;
@@ -103,7 +103,7 @@ class GameState
 		}
 	}
 
-	public fun render(cmd)
+	fun render(cmd)
 	{
 		// cmd.extend(200, 200);
 		cmd.windowbox(this.gs * this.tc, this.gs * this.tc);

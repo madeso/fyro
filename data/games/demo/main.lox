@@ -5,14 +5,14 @@ letter.align(0.5, 0.5);
 
 class GameState
 {
-	public var p1x = 0;
-	public var p1y = 0;
+	var p1x = 0;
+	var p1y = 0;
 
-	public var p2 = false;
-	public var p2x = 30;
-	public var p2y = 30;
+	var p2 = false;
+	var p2x = 30;
+	var p2y = 30;
 
-	public fun update(dt)
+	fun update(dt)
 	{
 		var speed = 30.0;
 
@@ -44,7 +44,7 @@ class GameState
 		}
 	}
 
-	public fun render(cmd)
+	fun render(cmd)
 	{
 		cmd.windowbox(200, 200);
 

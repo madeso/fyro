@@ -43,13 +43,13 @@ fun sign(x)
 
 class GameState
 {
-	public var p1x = game_size / 2.0;
-	public var p1y = game_size / 6.0;
+	var p1x = game_size / 2.0;
+	var p1y = game_size / 6.0;
 
-	public var bkg_y = 0;
-	public var dx = 0;
+	var bkg_y = 0;
+	var dx = 0;
 
-	public fun update(dt)
+	fun update(dt)
 	{
 		var player1 = fyro.get_input();
 		this.p1x += player1.current.axis_left_x * dt * player_speed;
@@ -73,7 +73,7 @@ class GameState
 		}
 	}
 
-	public fun render(cmd)
+	fun render(cmd)
 	{
 		cmd.windowbox(game_size, game_size);
 
