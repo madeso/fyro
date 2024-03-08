@@ -217,7 +217,7 @@ Render2::Render2()
 	, quad_shader
 	(
 		R"glsl(
-			#version 450 core
+			#version 430 core
 			in vec3 position;
 			in vec4 color;
 			in vec2 uv;
@@ -236,7 +236,7 @@ Render2::Render2()
 			}
 		)glsl"sv,
 		R"glsl(
-			#version 450 core
+			#version 430 core
 
 			in vec4 varying_color;
 			in vec2 varying_uv;
