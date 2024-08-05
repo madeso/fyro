@@ -78,15 +78,15 @@ class GameState
 		cmd.windowbox(game_size, game_size);
 
 		// draw 2 bkg... this should hopefully clear the screen
-		cmd.sprite(bkg, 0, this.bkg_y + game_size);
-		cmd.sprite(bkg, 0, this.bkg_y);
+		cmd.sprite(bkg, 0, this.bkg_y + game_size, false, false);
+		cmd.sprite(bkg, 0, this.bkg_y, false, false);
 
 		var player = player_mi;
 		if(this.dx > range_almost) { player = player_ar; }
 		if(this.dx > range_most) { player = player_ri; }
 		if(this.dx < -range_almost) { player = player_al; }
 		if(this.dx < -range_most) { player = player_le; }
-		cmd.sprite(player, this.p1x, this.p1y);
+		cmd.sprite(player, this.p1x, this.p1y, false, false);
 	}
 }
 
