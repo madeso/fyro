@@ -38,6 +38,9 @@ on_collision(player: Player, enemy: Enemy) => {
 -   extend api to something similar to flixel
 -   add hot reload
 -   add data "screenshot" dump of the last x seconds, with debugging, logging, log diff and replayability
+-   get debugging ideas from
+    -   [Tomorrow Corporation Tech Demo](https://www.youtube.com/watch?v=72y2EC5fkcE)
+    -   [Bret Victor - Inventing on Principle](https://www.youtube.com/watch?v=PUv66718DII)
 -   add serialization/savefiles
 -   add a quick hiscore
 -   add a quick menu system
