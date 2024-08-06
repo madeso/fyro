@@ -23,7 +23,6 @@ set(src_base
 	fyro/cint.cc fyro/cint.h
 	fyro/dependency_opengl.cc fyro/dependency_opengl.h
 	fyro/dependency_sdl.cc fyro/dependency_sdl.h fyro/dependency_glad.h
-	fyro/fyro.h
 	fyro/game.cc fyro/game.h
 	fyro/log.cc fyro/log.h
 	fyro/random.cc fyro/random.h

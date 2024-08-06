@@ -10,12 +10,15 @@
 #include "lox/lox.h"
 #include "lox/printhandler.h"
 
-#include "fyro/fyro.h"
+#include "fyro/game.h"
+
 #include "fyro/render/font.h"
 #include "fyro/render/texture.h"
 #include "fyro/collision2.h"
 #include "fyro/tiles.h"
 
+#include "fyro/dependency_sdl.h"
+#include "fyro/dependency_imgui.h"
 #include "tmxlite/Map.hpp"
 
 using json = nlohmann::json;
