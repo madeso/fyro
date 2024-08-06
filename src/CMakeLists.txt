@@ -29,7 +29,6 @@ set(src_base
 	fyro/random.cc fyro/random.h
 	fyro/rect.cc fyro/rect.h
 	fyro/types.cc fyro/types.h
-	fyro/windows.sdl.convert.cc fyro/windows.sdl.convert.h
 
 	fyro/collision2.cc fyro/collision2.h
 	fyro/tiles.cc fyro/tiles.h

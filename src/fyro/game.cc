@@ -22,7 +22,6 @@
 #include "fyro/types.h"
 #include "fyro/render/texture.h"
 #include "fyro/render/viewportdef.h"
-#include "fyro/windows.sdl.convert.h"
 
 
 void Game::on_render(const render::RenderCommand&) {}
@@ -38,6 +37,22 @@ void Game::on_lost_joystick_instance(int) {}
 
 namespace
 {
+
+	input::MouseButton to_mouse_button(Uint8 mb)
+	{
+		switch (mb)
+		{
+			case SDL_BUTTON_LEFT: return input::MouseButton::left;
+			case SDL_BUTTON_MIDDLE: return input::MouseButton::middle;
+			case SDL_BUTTON_RIGHT: return input::MouseButton::right;
+			case SDL_BUTTON_X1: return input::MouseButton::x1;
+			case SDL_BUTTON_X2: return input::MouseButton::x2;
+			default:
+				DIE("Invalid mouse button");
+				return input::MouseButton::invalid;
+		}
+	}
+
 	void setup_open_gl(render::OpenglStates* states, SDL_Window* window, SDL_GLContext glcontext, bool imgui)
 	{
 		opengl_setup(states);
@@ -225,7 +240,7 @@ void pump_events(Window* window)
 		case SDL_MOUSEBUTTONUP:
 			if(handle_mouse)
 			{
-				window->game->on_mouse_button({window->size}, sdl::to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN);
+				window->game->on_mouse_button({window->size}, to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN);
 			}
 			break;
 
