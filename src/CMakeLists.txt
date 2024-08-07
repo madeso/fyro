@@ -1,11 +1,6 @@
 set(src_empty
 )
 
-set(src_input
-	fyro/input/key.cc fyro/input/key.h
-	fyro/input/axis.cc fyro/input/axis.h
-)
-
 set(src_render
 	fyro/render/font.cc fyro/render/font.h
 	fyro/render/layer2.cc fyro/render/layer2.h
@@ -40,7 +35,6 @@ set(src_pch
 )
 
 set(src
-	${src_input}
 	${src_empty}
 	${src_render}
 	${src_base}
@@ -77,7 +71,6 @@ target_precompile_headers(fyro
 
 source_group("" FILES ${src})
 
-source_group("input" FILES ${src_input})
 source_group("empty" FILES ${src_empty})
 source_group("render" FILES ${src_render})
 source_group("base" FILES ${src_base})

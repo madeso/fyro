@@ -29,7 +29,7 @@ void Game::on_imgui() {}
 void Game::on_update(float) { }
 void Game::on_key(char, bool) {}
 void Game::on_mouse_position(const render::InputCommand&, const glm::ivec2&) {}
-void Game::on_mouse_button(const render::InputCommand&, input::MouseButton, bool) {}
+void Game::on_mouse_button(const render::InputCommand&, MouseButton, bool) {}
 void Game::on_mouse_wheel(int) {}
 
 void Game::on_added_controller(SDL_GameController*) {}
@@ -38,18 +38,18 @@ void Game::on_lost_joystick_instance(int) {}
 namespace
 {
 
-	input::MouseButton to_mouse_button(Uint8 mb)
+	MouseButton to_mouse_button(Uint8 mb)
 	{
 		switch (mb)
 		{
-			case SDL_BUTTON_LEFT: return input::MouseButton::left;
-			case SDL_BUTTON_MIDDLE: return input::MouseButton::middle;
-			case SDL_BUTTON_RIGHT: return input::MouseButton::right;
-			case SDL_BUTTON_X1: return input::MouseButton::x1;
-			case SDL_BUTTON_X2: return input::MouseButton::x2;
+			case SDL_BUTTON_LEFT: return MouseButton::left;
+			case SDL_BUTTON_MIDDLE: return MouseButton::middle;
+			case SDL_BUTTON_RIGHT: return MouseButton::right;
+			case SDL_BUTTON_X1: return MouseButton::x1;
+			case SDL_BUTTON_X2: return MouseButton::x2;
 			default:
 				DIE("Invalid mouse button");
-				return input::MouseButton::invalid;
+				return MouseButton::invalid;
 		}
 	}
 
