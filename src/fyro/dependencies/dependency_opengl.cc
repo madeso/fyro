@@ -1,4 +1,4 @@
-#include "fyro/dependency_opengl.h"
+#include "fyro/dependencies/dependency_opengl.h"
 
 
 GLenum

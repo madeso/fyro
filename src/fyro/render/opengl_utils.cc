@@ -3,8 +3,8 @@
 #include "fyro/assert.h"
 #include "fyro/log.h"
 
-#include "fyro/dependency_opengl.h"
-#include "fyro/dependency_sdl.h"
+#include "fyro/dependencies/dependency_opengl.h"
+#include "fyro/dependencies/dependency_sdl.h"
 
 
 namespace render

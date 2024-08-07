@@ -8,7 +8,7 @@
 #include "fyro/render/texture.h"
 #include "fyro/render/render2.h"
 
-#include "fyro/dependency_imgui.h"
+#include "fyro/dependencies/dependency_imgui.h"
 
 namespace render
 {

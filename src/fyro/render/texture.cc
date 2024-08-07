@@ -5,7 +5,7 @@
 #include "fyro/assert.h"
 
 #include "fyro/cint.h"
-#include "fyro/dependency_opengl.h"
+#include "fyro/dependencies/dependency_opengl.h"
 #include "fyro/log.h"
 
 

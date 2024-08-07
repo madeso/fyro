@@ -1,6 +1,6 @@
 #include "fyro/render/layer2.h"
 
-#include "fyro/dependency_opengl.h"
+#include "fyro/dependencies/dependency_opengl.h"
 
 #include "fyro/render/opengl_utils.h"
 #include "fyro/render/render2.h"

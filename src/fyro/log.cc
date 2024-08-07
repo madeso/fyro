@@ -1,6 +1,6 @@
 #include "fyro/log.h"
 
-#include "fyro/dependency_sdl.h"
+#include "fyro/dependencies/dependency_sdl.h"
 
 namespace
 {

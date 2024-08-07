@@ -10,4 +10,4 @@
 #include <fmt/format.h>
 
 // in favor of euphoria base library
-#include "fyro/dependency_glm.h"
+#include "fyro/dependencies/dependency_glm.h"

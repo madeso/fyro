@@ -11,11 +11,11 @@
 
 
 // imgui
-#include "fyro/dependency_imgui.h"
+#include "fyro/dependencies/dependency_imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
-#include "fyro/dependency_sdl.h"
+#include "fyro/dependencies/dependency_sdl.h"
 
 #include "fyro/log.h"
 #include "fyro/render/opengl_utils.h"

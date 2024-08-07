@@ -1,6 +1,3 @@
-set(src_empty
-)
-
 set(src_render
 	fyro/render/font.cc fyro/render/font.h
 	fyro/render/layer2.cc fyro/render/layer2.h
@@ -12,12 +9,18 @@ set(src_render
 	fyro/render/vertex_layout.cc fyro/render/vertex_layout.h
 	fyro/render/viewportdef.cc fyro/render/viewportdef.h
 	)
-	
+
+set(src_dependencies
+	fyro/dependencies/dependency_glad.h
+	fyro/dependencies/dependency_glm.cc fyro/dependencies/dependency_glm.h
+	fyro/dependencies/dependency_imgui.h
+	fyro/dependencies/dependency_opengl.cc fyro/dependencies/dependency_opengl.h
+	fyro/dependencies/dependency_sdl.cc fyro/dependencies/dependency_sdl.h
+)
+
 set(src_base
 	fyro/assert.cc fyro/assert.h
 	fyro/cint.cc fyro/cint.h
-	fyro/dependency_opengl.cc fyro/dependency_opengl.h
-	fyro/dependency_sdl.cc fyro/dependency_sdl.h fyro/dependency_glad.h
 	fyro/game.cc fyro/game.h
 	fyro/log.cc fyro/log.h
 	fyro/random.cc fyro/random.h
@@ -35,8 +38,8 @@ set(src_pch
 )
 
 set(src
-	${src_empty}
 	${src_render}
+	${src_dependencies}
 	${src_base}
 	${src_pch}
 )
@@ -71,7 +74,7 @@ target_precompile_headers(fyro
 
 source_group("" FILES ${src})
 
-source_group("empty" FILES ${src_empty})
+source_group("dependencies" FILES ${src_dependencies})
 source_group("render" FILES ${src_render})
 source_group("base" FILES ${src_base})
 source_group("pch" FILES ${src_pch})
