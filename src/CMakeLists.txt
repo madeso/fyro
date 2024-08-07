@@ -23,7 +23,6 @@ set(src_base
 	fyro/cint.cc fyro/cint.h
 	fyro/game.cc fyro/game.h
 	fyro/log.cc fyro/log.h
-	fyro/random.cc fyro/random.h
 	fyro/rect.cc fyro/rect.h
 	fyro/types.cc fyro/types.h
 
