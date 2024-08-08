@@ -1,5 +1,3 @@
-#include <iostream>
-#include <fstream>
 #include <optional>
 #include <random>
 
@@ -16,6 +14,7 @@
 #include "fyro/collision2.h"
 #include "fyro/tiles.h"
 #include "fyro/io.h"
+#include "fyro/log.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
@@ -95,7 +94,7 @@ std::vector<std::string> physfs_files_in_dir(const std::string &dir)
 
 	if (ok == 0)
 	{
-		std::cerr << "failed to enumerate " << dir << "\n";
+		LOG_WARNING("failed to enumerate {0}", dir);
 	}
 
 	return r;
@@ -229,7 +228,7 @@ struct PrintLoxError : lox::PrintHandler
 {
 	void on_line(std::string_view line) override
 	{
-		std::cerr << line << "\n";
+		LOG_ERROR("> {0}", line);
 	}
 };
 
@@ -690,7 +689,7 @@ struct HapticsEngine
 		const auto initialized = SDL_HapticRumbleInit(haptic);
 		if (initialized != 0)
 		{
-			std::cout << "SDL: rumble not supported: " << SDL_GetError() << "\n";
+			LOG_WARNING("SDL: rumble not supported: {0}", SDL_GetError());
 			SDL_HapticClose(haptic);
 			return nullptr;
 		}
@@ -916,7 +915,7 @@ struct Input
 	{
 		auto ctrl = std::make_shared<InputDevice_Gamecontroller>(controller);
 		const auto index = ctrl->get_device_index();
-		std::cout << "Connected " << index << ": " << ctrl->get_name() << "\n";
+		LOG_INFO("Connected {0}: {1}", index, ctrl->get_name());
 		controllers.insert({index, ctrl});
 	}
 
@@ -924,7 +923,7 @@ struct Input
 	{
 		if (auto found = controllers.find(instance_id); found != controllers.end())
 		{
-			std::cout << "Lost " << found->first << ": " << found->second->get_name() << "\n";
+			LOG_INFO("Lost {0}: {1}", found->first, found->second->get_name());
 			found->second->clear_controller();
 			controllers.erase(found);
 		}
@@ -1441,7 +1440,7 @@ struct ExampleGame : public Game
 
 	ExampleGame()
 		: lox(std::make_unique<PrintLoxError>(), [](const std::string &str)
-			  { std::cout << str << "\n"; }),
+			  { LOG_INFO("> {0}", str); }),
 		  texture_cache([](const std::string &path)
 						{ return load_texture(path); })
 	{
@@ -2108,13 +2107,13 @@ struct Physfs
 		if (ok == 0)
 		{
 			const std::string error = get_physfs_error();
-			std::cerr << "Unable to shut down physfs: " << error << "\n";
+			LOG_ERROR("Unable to shut down physfs: {0}", error);
 		}
 	}
 
 	void setup(const std::string &root)
 	{
-		std::cout << "sugggested root is: " << root << "\n";
+		LOG_INFO("Sugggested root is: {0}", root);
 		PHYSFS_mount(root.c_str(), "/", 1);
 	}
 };
@@ -2136,7 +2135,7 @@ int run(int argc, char **argv)
 		{
 			if (folder_arg)
 			{
-				std::cerr << "Folder already specified as " << *folder_arg << ": " << cmd << "\n";
+				LOG_WARNING("Folder already specified as {0}: {1}", *folder_arg, cmd);
 				return -1;
 			}
 			else
@@ -2176,7 +2175,7 @@ int main(int argc, char **argv)
 		auto x = collect_exception();
 		for (const auto &e : x.errors)
 		{
-			std::cerr << e << '\n';
+			LOG_ERROR("- {0}", e);
 		}
 		return -1;
 	}
