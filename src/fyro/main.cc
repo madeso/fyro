@@ -16,6 +16,7 @@
 #include "fyro/render/texture.h"
 #include "fyro/collision2.h"
 #include "fyro/tiles.h"
+#include "fyro/io.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
@@ -24,17 +25,6 @@
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-std::string get_dir_from_file(const std::string &path)
-{
-	if (const auto slash = path.rfind('/'); slash != std::string::npos)
-	{
-		return path.substr(0, slash - 1);
-	}
-	else
-	{
-		return path;
-	}
-}
 
 int to_int(lox::Ti ti)
 {
