@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 #include <optional>
 #include <random>
 
@@ -23,7 +22,6 @@
 #include "tmxlite/Map.hpp"
 
 using json = nlohmann::json;
-namespace fs = std::filesystem;
 
 
 int to_int(lox::Ti ti)
@@ -2150,9 +2148,7 @@ int run(int argc, char **argv)
 
 	if (folder_arg)
 	{
-		fs::path folder = *folder_arg;
-		folder = fs::canonical(folder);
-		physfs.setup(folder.string());
+		physfs.setup(cannonical_folder(*folder_arg));
 	}
 	else
 	{
