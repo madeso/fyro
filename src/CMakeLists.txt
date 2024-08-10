@@ -21,7 +21,7 @@ set(src_dependencies
 set(src_base
 	fyro/assert.cc fyro/assert.h
 	fyro/cint.cc fyro/cint.h
-	fyro/game.cc fyro/game.h
+	fyro/main.sdl.cc fyro/main.sdl.h
 	fyro/log.cc fyro/log.h
 	fyro/rect.cc fyro/rect.h
 	fyro/types.cc fyro/types.h

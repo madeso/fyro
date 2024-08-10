@@ -6,7 +6,7 @@
 #include "lox/lox.h"
 #include "lox/printhandler.h"
 
-#include "fyro/game.h"
+#include "fyro/main.sdl.h"
 #include "fyro/cache.h"
 
 #include "fyro/render/font.h"

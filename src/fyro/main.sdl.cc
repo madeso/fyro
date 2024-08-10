@@ -1,4 +1,4 @@
-#include "fyro/game.h"
+#include "fyro/main.sdl.h"
 
 #include <map>
 
