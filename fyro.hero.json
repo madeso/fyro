@@ -2,13 +2,12 @@
     "project_directories":
     [
         "src/fyro/render",
-        "examples/main.cc",
-        "examples/assets.cc",
-        "examples/assets.h"
+        "src/fyro/"
     ],
     "include_directories":
     [
-        "src"
+        "src",
+		"external/lox/src"
     ],
 
     "precompiled_headers":
