@@ -1,8 +1,6 @@
 #include <optional>
 #include <random>
 
-#include <nlohmann/json.hpp>
-
 #include "lox/lox.h"
 #include "lox/printhandler.h"
 
@@ -19,68 +17,16 @@
 #include "fyro/exception.h"
 #include "fyro/vfs.h"
 #include "fyro/rgb.h"
+#include "fyro/gamedata.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
 #include "tmxlite/Map.hpp"
 
-using json = nlohmann::json;
-
 
 int to_int(lox::Ti ti)
 {
 	return static_cast<int>(ti);
-}
-
-std::optional<json> load_json_or_none(const std::string &path)
-{
-	if (const auto src = read_file_to_string_or_none(path))
-	{
-		auto parsed = json::parse(*src);
-		return parsed; // assigning to a variable and then returning makes gcc happy
-	}
-	else
-	{
-		return std::nullopt;
-	}
-}
-
-struct GameData
-{
-	std::string title = "fyro";
-	int width = 800;
-	int height = 600;
-};
-
-GameData load_game_data_or_default(const std::string &path)
-{
-	try
-	{
-		if (const auto loaded_data = load_json_or_none(path); loaded_data)
-		{
-			const auto &data = *loaded_data;
-
-			auto r = GameData{};
-			r.title = data["title"].get<std::string>();
-			r.width = data["width"].get<int>();
-			r.height = data["height"].get<int>();
-			return r;
-		}
-		else
-		{
-			auto r = GameData{};
-			r.title = "Example";
-			r.width = 800;
-			r.height = 600;
-			return r;
-		}
-	}
-	catch (...)
-	{
-		auto x = collect_exception();
-		x.append("while reading " + path);
-		throw x;
-	}
 }
 
 struct PrintLoxError : lox::PrintHandler
