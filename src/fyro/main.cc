@@ -18,6 +18,7 @@
 #include "fyro/input.h"
 #include "fyro/exception.h"
 #include "fyro/vfs.h"
+#include "fyro/rgb.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
@@ -87,30 +88,6 @@ struct PrintLoxError : lox::PrintHandler
 	void on_line(std::string_view line) override
 	{
 		LOG_ERROR("> {0}", line);
-	}
-};
-
-constexpr float rgb_i2f(int i)
-{
-	return static_cast<float>(i) / 255.0f;
-}
-
-struct Rgb
-{
-	float r;
-	float g;
-	float b;
-
-	Rgb() = default;
-
-	constexpr Rgb(float ir, float ig, float ib)
-		: r(ir), g(ig), b(ib)
-	{
-	}
-
-	constexpr Rgb(int ir, int ig, int ib)
-		: r(rgb_i2f(ir)), g(rgb_i2f(ig)), b(rgb_i2f(ib))
-	{
 	}
 };
 
