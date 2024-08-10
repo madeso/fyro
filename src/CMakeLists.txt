@@ -27,6 +27,7 @@ set(src_base
 	fyro/types.cc fyro/types.h
 	fyro/io.cc fyro/io.h
 	fyro/input.cc fyro/input.h
+	fyro/exception.cc fyro/exception.h
 
 	fyro/collision2.cc fyro/collision2.h
 	fyro/tiles.cc fyro/tiles.h

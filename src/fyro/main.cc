@@ -16,6 +16,7 @@
 #include "fyro/io.h"
 #include "fyro/log.h"
 #include "fyro/input.h"
+#include "fyro/exception.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
@@ -27,46 +28,6 @@ using json = nlohmann::json;
 int to_int(lox::Ti ti)
 {
 	return static_cast<int>(ti);
-}
-
-struct Exception
-{
-	std::vector<std::string> errors;
-
-	Exception append(const std::string &str)
-	{
-		errors.emplace_back(str);
-		return *this;
-	}
-
-	Exception append(const std::vector<std::string> &li)
-	{
-		for (const auto &str : li)
-		{
-			errors.emplace_back(str);
-		}
-		return *this;
-	}
-};
-
-Exception collect_exception()
-{
-	try
-	{
-		throw;
-	}
-	catch (const Exception &e)
-	{
-		return e;
-	}
-	catch (const std::exception &e)
-	{
-		return {{e.what()}};
-	}
-	catch (...)
-	{
-		return {{"unknown errror"}};
-	}
 }
 
 std::string get_physfs_error()
