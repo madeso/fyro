@@ -1,14 +1,14 @@
 #include "fyro/exception.h"
 
-Exception Exception::append(const std::string &str)
+Exception Exception::append(const std::string& str)
 {
 	errors.emplace_back(str);
 	return *this;
 }
 
-Exception Exception::append(const std::vector<std::string> &li)
+Exception Exception::append(const std::vector<std::string>& li)
 {
-	for (const auto &str : li)
+	for (const auto& str: li)
 	{
 		errors.emplace_back(str);
 	}
@@ -21,11 +21,11 @@ Exception collect_exception()
 	{
 		throw;
 	}
-	catch (const Exception &e)
+	catch (const Exception& e)
 	{
 		return e;
 	}
-	catch (const std::exception &e)
+	catch (const std::exception& e)
 	{
 		return {{e.what()}};
 	}

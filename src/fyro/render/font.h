@@ -18,10 +18,12 @@ struct Font
 	~Font();
 
 	std::unique_ptr<FontImpl> impl;
-	
-	void print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text);
+
+	void print(
+		SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text
+	);
 	void imgui();
 };
 
 
-}
+}  //  namespace render

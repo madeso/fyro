@@ -28,7 +28,6 @@ KeyboardMapping create_default_mapping_for_player1()
 	return m;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// Util functions
 
@@ -46,15 +45,13 @@ float make_stable(float f)
 	}
 }
 
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// Capturing
 
-InputFrame capture_keyboard(const KeyboardMapping &mapping)
+InputFrame capture_keyboard(const KeyboardMapping& mapping)
 {
 	int numkeys = 0;
-	const Uint8 *keys = SDL_GetKeyboardState(&numkeys);
+	const Uint8* keys = SDL_GetKeyboardState(&numkeys);
 
 	const auto get = [keys, numkeys](std::optional<SDL_Scancode> sc) -> bool
 	{
@@ -121,7 +118,7 @@ InputFrame capture_keyboard(const KeyboardMapping &mapping)
 	return r;
 }
 
-InputFrame capture_gamecontroller(SDL_GameController *gamecontroller)
+InputFrame capture_gamecontroller(SDL_GameController* gamecontroller)
 {
 	// The state is a value ranging from -32768 to 32767.
 	const auto from_axis = [gamecontroller](SDL_GameControllerAxis axis) -> float
@@ -194,14 +191,12 @@ InputFrame capture_gamecontroller(SDL_GameController *gamecontroller)
 	return r;
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// HapticsEffect
 
 HapticsEffect::HapticsEffect(float f, float l)
-	: force(f), life(l)
+	: force(f)
+	, life(l)
 {
 }
 
@@ -215,13 +210,11 @@ void HapticsEffect::update(float dt)
 	life -= dt;
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// HapticsEngine
 
-HapticsEngine::HapticsEngine(SDL_Joystick *joystick) : haptic(create_haptic(joystick))
+HapticsEngine::HapticsEngine(SDL_Joystick* joystick)
+	: haptic(create_haptic(joystick))
 {
 }
 
@@ -254,16 +247,19 @@ void HapticsEngine::run(float force, float life)
 
 void HapticsEngine::update(float dt)
 {
-	for (auto &e : effects)
+	for (auto& e: effects)
 	{
 		e.update(dt);
 	}
 
-	effects.erase(std::remove_if(effects.begin(),
-									effects.end(),
-									[&](const HapticsEffect &e) -> bool
-									{ return e.is_alive() == false; }),
-					effects.end());
+	effects.erase(
+		std::remove_if(
+			effects.begin(),
+			effects.end(),
+			[&](const HapticsEffect& e) -> bool { return e.is_alive() == false; }
+		),
+		effects.end()
+	);
 
 	enable_disable_rumble();
 }
@@ -297,12 +293,12 @@ void HapticsEngine::enable_disable_rumble()
 	}
 	else if (current)
 	{
-		assert(!last_rumble);
+		assert(! last_rumble);
 		sdl_start_rumble();
 	}
 	else if (last_rumble)
 	{
-		assert(!current);
+		assert(! current);
 		sdl_stop_rumble();
 	}
 	else
@@ -316,7 +312,7 @@ void HapticsEngine::enable_disable_rumble()
 std::optional<float> HapticsEngine::get_rumble_effect() const
 {
 	std::optional<float> force = std::nullopt;
-	for (auto &e : effects)
+	for (auto& e: effects)
 	{
 		if (force)
 		{
@@ -338,9 +334,9 @@ std::optional<float> HapticsEngine::get_rumble_effect() const
 	}
 }
 
-SDL_Haptic* HapticsEngine::create_haptic(SDL_Joystick *joystick)
+SDL_Haptic* HapticsEngine::create_haptic(SDL_Joystick* joystick)
 {
-	SDL_Haptic *haptic;
+	SDL_Haptic* haptic;
 
 	// Open the device
 	haptic = SDL_HapticOpenFromJoystick(joystick);
@@ -361,14 +357,12 @@ SDL_Haptic* HapticsEngine::create_haptic(SDL_Joystick *joystick)
 	return haptic;
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// InputDevice_Keyboard
 
-InputDevice_Keyboard::InputDevice_Keyboard(GlobalMappings *m, std::size_t i)
-	: mappings(m), index(i)
+InputDevice_Keyboard::InputDevice_Keyboard(GlobalMappings* m, std::size_t i)
+	: mappings(m)
+	, index(i)
 {
 }
 
@@ -401,25 +395,24 @@ void InputDevice_Keyboard::on_imgui()
 {
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// InputDevice_Gamecontroller
 
-InputDevice_Gamecontroller::InputDevice_Gamecontroller(SDL_GameController *c)
-	: controller(c), haptics(SDL_GameControllerGetJoystick(c)), name(collect_name(c))
+InputDevice_Gamecontroller::InputDevice_Gamecontroller(SDL_GameController* c)
+	: controller(c)
+	, haptics(SDL_GameControllerGetJoystick(c))
+	, name(collect_name(c))
 {
 }
 
-std::string InputDevice_Gamecontroller::collect_name(SDL_GameController *controller)
+std::string InputDevice_Gamecontroller::collect_name(SDL_GameController* controller)
 {
 	if (controller == nullptr)
 	{
 		return "missing controller";
 	}
 
-	const char *name = SDL_GameControllerName(controller);
+	const char* name = SDL_GameControllerName(controller);
 	if (name)
 	{
 		return name;
@@ -446,7 +439,7 @@ void InputDevice_Gamecontroller::clear_controller()
 
 int InputDevice_Gamecontroller::get_device_index()
 {
-	auto *joystick = SDL_GameControllerGetJoystick(controller);
+	auto* joystick = SDL_GameControllerGetJoystick(controller);
 	return SDL_JoystickInstanceID(joystick);
 }
 
@@ -488,11 +481,8 @@ void InputDevice_Gamecontroller::on_imgui()
 	haptics.on_imgui();
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-//// Player	
+//// Player
 
 Player::~Player()
 {
@@ -520,9 +510,7 @@ bool Player::is_connected()
 void Player::update_frame()
 {
 	last_frame = current_frame;
-	current_frame = device
-						? device->capture_frame()
-						: InputFrame{};
+	current_frame = device ? device->capture_frame() : InputFrame{};
 }
 
 void Player::run_haptics(float force, float life)
@@ -541,13 +529,10 @@ void Player::update(float dt)
 	}
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// Input
 
-void Input::add_controller(SDL_GameController *controller)
+void Input::add_controller(SDL_GameController* controller)
 {
 	auto ctrl = std::make_shared<InputDevice_Gamecontroller>(controller);
 	const auto index = ctrl->get_device_index();
@@ -567,7 +552,7 @@ void Input::lost_controller(int instance_id)
 
 void Input::on_imgui()
 {
-	for (auto &p : players)
+	for (auto& p: players)
 	{
 		p->on_imgui();
 	}
@@ -580,9 +565,9 @@ void Input::add_keyboard(std::shared_ptr<InputDevice_Keyboard> kb)
 
 std::shared_ptr<InputDevice> Input::find_device()
 {
-	for (auto &co : controllers)
+	for (auto& co: controllers)
 	{
-		auto &c = co.second;
+		auto& c = co.second;
 		if (c->free && c->capture_frame().button_start)
 		{
 			c->free = false;
@@ -590,7 +575,7 @@ std::shared_ptr<InputDevice> Input::find_device()
 		}
 	}
 
-	for (auto &c : keyboards)
+	for (auto& c: keyboards)
 	{
 		if (c->free && c->capture_frame().button_start)
 		{
@@ -609,7 +594,7 @@ void Input::start_new_frame()
 	// todo(Gustav): remove old players
 
 	// age players
-	for (auto &p : players)
+	for (auto& p: players)
 	{
 		p->age += 1;
 	}
@@ -641,9 +626,8 @@ std::shared_ptr<Player> Input::capture_player()
 
 void Input::update(float dt)
 {
-	for (auto &p : players)
+	for (auto& p: players)
 	{
 		p->update(dt);
 	}
 }
-

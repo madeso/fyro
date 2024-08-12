@@ -7,4 +7,4 @@ struct GameData
 	int height = 600;
 };
 
-GameData load_game_data_or_default(const std::string &path);
+GameData load_game_data_or_default(const std::string& path);

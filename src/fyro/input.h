@@ -4,8 +4,6 @@
 
 #include <map>
 
-
-
 struct KeyboardMapping
 {
 	std::optional<SDL_Scancode> axis_left_x_neg;
@@ -89,10 +87,10 @@ struct HapticsEffect
 
 struct HapticsEngine
 {
-	SDL_Haptic *haptic;
+	SDL_Haptic* haptic;
 	std::vector<HapticsEffect> effects;
 
-	explicit HapticsEngine(SDL_Joystick *joystick);
+	explicit HapticsEngine(SDL_Joystick* joystick);
 	~HapticsEngine();
 
 	void on_imgui();
@@ -104,12 +102,12 @@ struct HapticsEngine
 
 	std::optional<float> get_rumble_effect() const;
 
-	HapticsEngine(const HapticsEngine &) = delete;
-	void operator=(const HapticsEngine &) = delete;
-	HapticsEngine(HapticsEngine &&) = delete;
-	void operator=(HapticsEngine &&) = delete;
+	HapticsEngine(const HapticsEngine&) = delete;
+	void operator=(const HapticsEngine&) = delete;
+	HapticsEngine(HapticsEngine&&) = delete;
+	void operator=(HapticsEngine&&) = delete;
 
-	static SDL_Haptic *create_haptic(SDL_Joystick *joystick);
+	static SDL_Haptic* create_haptic(SDL_Joystick* joystick);
 };
 
 struct InputDevice
@@ -134,10 +132,10 @@ struct GlobalMappings
 
 struct InputDevice_Keyboard : InputDevice
 {
-	GlobalMappings *mappings = nullptr;
+	GlobalMappings* mappings = nullptr;
 	std::size_t index = 0;
 
-	InputDevice_Keyboard(GlobalMappings *m, std::size_t i);
+	InputDevice_Keyboard(GlobalMappings* m, std::size_t i);
 
 	std::string get_name() override;
 	bool is_connected() override;
@@ -149,15 +147,15 @@ struct InputDevice_Keyboard : InputDevice
 
 struct InputDevice_Gamecontroller : InputDevice
 {
-	SDL_GameController *controller;
+	SDL_GameController* controller;
 	HapticsEngine haptics;
 	std::string name;
 
-	explicit InputDevice_Gamecontroller(SDL_GameController *c);
+	explicit InputDevice_Gamecontroller(SDL_GameController* c);
 	~InputDevice_Gamecontroller();
 
-	static std::string collect_name(SDL_GameController *controller);
-	
+	static std::string collect_name(SDL_GameController* controller);
+
 
 	void clear_controller();
 	int get_device_index();
@@ -194,7 +192,7 @@ struct Input
 	std::vector<std::shared_ptr<Player>> players;
 	std::size_t next_player = 0;
 
-	void add_controller(SDL_GameController *controller);
+	void add_controller(SDL_GameController* controller);
 	void lost_controller(int instance_id);
 	void on_imgui();
 	void add_keyboard(std::shared_ptr<InputDevice_Keyboard> kb);
@@ -206,6 +204,5 @@ struct Input
 	std::shared_ptr<Player> capture_player();
 	void update(float dt);
 };
-
 
 KeyboardMapping create_default_mapping_for_player1();

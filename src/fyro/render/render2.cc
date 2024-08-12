@@ -8,22 +8,14 @@
 
 using namespace std::literals;
 
-
 namespace render
 {
 
 SpriteBatch::SpriteBatch(ShaderProgram* quad_shader, Render2* r)
 	: render(r)
-	, white_texture
-	(
-		load_image_from_color
-		(
-			0xffffffff,
-			TextureEdge::clamp,
-			TextureRenderStyle::pixel,
-			Transparency::include
-		)
-	)
+	, white_texture(load_image_from_color(
+		  0xffffffff, TextureEdge::clamp, TextureRenderStyle::pixel, Transparency::include
+	  ))
 {
 	quad_shader->use();
 
@@ -61,7 +53,7 @@ SpriteBatch::SpriteBatch(ShaderProgram* quad_shader, Render2* r)
 	std::vector<u32> indices;
 	indices.reserve(max_indices);
 
-	for(auto quad_index=0; quad_index<max_quads; quad_index+=1)
+	for (auto quad_index = 0; quad_index < max_quads; quad_index += 1)
 	{
 		const auto base = quad_index * 4;
 		indices.emplace_back(base + 0);
@@ -77,9 +69,10 @@ SpriteBatch::SpriteBatch(ShaderProgram* quad_shader, Render2* r)
 
 	glGenBuffers(1, &ib);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_indices * sizeof(u32), indices.data(), GL_STATIC_DRAW);
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER, max_indices * sizeof(u32), indices.data(), GL_STATIC_DRAW
+	);
 }
-
 
 SpriteBatch::~SpriteBatch()
 {
@@ -92,7 +85,6 @@ SpriteBatch::~SpriteBatch()
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &va);
 }
-
 
 void add_vertex(SpriteBatch* batch, const Vertex3& v)
 {
@@ -112,13 +104,18 @@ void add_vertex(SpriteBatch* batch, const Vertex3& v)
 Rectf get_sprite(const Texture& texture, const Recti& ri)
 {
 	const auto r = Cint_to_float(ri);
-	const auto w = 1.0f/static_cast<float>(texture.width);
-	const auto h = 1.0f/static_cast<float>(texture.height);
-	return {r.left * w, 1-r.top * h, r.right * w, 1-r.bottom * h};
+	const auto w = 1.0f / static_cast<float>(texture.width);
+	const auto h = 1.0f / static_cast<float>(texture.height);
+	return {r.left * w, 1 - r.top * h, r.right * w, 1 - r.bottom * h};
 }
 
-
-void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex2& v0, const Vertex2& v1, const Vertex2& v2, const Vertex2& v3)
+void SpriteBatch::quad(
+	std::optional<Texture*> texture_argument,
+	const Vertex2& v0,
+	const Vertex2& v1,
+	const Vertex2& v2,
+	const Vertex2& v3
+)
 {
 	auto c = [](const Vertex2& v) -> Vertex3
 	{
@@ -127,17 +124,22 @@ void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex2& 
 	quad(texture_argument, c(v0), c(v1), c(v2), c(v3));
 }
 
-
-void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex3& v0, const Vertex3& v1, const Vertex3& v2, const Vertex3& v3)
+void SpriteBatch::quad(
+	std::optional<Texture*> texture_argument,
+	const Vertex3& v0,
+	const Vertex3& v1,
+	const Vertex3& v2,
+	const Vertex3& v3
+)
 {
 	Texture* texture = texture_argument.value_or(&white_texture);
 
-	if(quads == max_quads)
+	if (quads == max_quads)
 	{
 		submit();
 	}
 
-	if(current_texture == nullptr)
+	if (current_texture == nullptr)
 	{
 		current_texture = texture;
 	}
@@ -155,20 +157,31 @@ void SpriteBatch::quad(std::optional<Texture*> texture_argument, const Vertex3& 
 	add_vertex(this, v3);
 }
 
-void SpriteBatch::quadf(std::optional<Texture*> texture, const Rectf& scr, const std::optional<Rectf>& texturecoord, bool flip_x, const glm::vec4& tint)
+void SpriteBatch::quadf(
+	std::optional<Texture*> texture,
+	const Rectf& scr,
+	const std::optional<Rectf>& texturecoord,
+	bool flip_x,
+	const glm::vec4& tint
+)
 {
 	const auto tc = texturecoord.value_or(Rectf{1.0f, 1.0f});
-	quad
-	(
+	quad(
 		texture,
-		{{scr.left,  scr.bottom }, tint, {flip_x ? tc.right : tc.left,  tc.bottom}},
-		{{scr.right, scr.bottom }, tint, {flip_x ? tc.left  : tc.right, tc.bottom}},
-		{{scr.right, scr.top    }, tint, {flip_x ? tc.left  : tc.right, tc.top}},
-		{{scr.left,  scr.top    }, tint, {flip_x ? tc.right : tc.left,  tc.top}}
+		{{scr.left, scr.bottom}, tint, {flip_x ? tc.right : tc.left, tc.bottom}},
+		{{scr.right, scr.bottom}, tint, {flip_x ? tc.left : tc.right, tc.bottom}},
+		{{scr.right, scr.top}, tint, {flip_x ? tc.left : tc.right, tc.top}},
+		{{scr.left, scr.top}, tint, {flip_x ? tc.right : tc.left, tc.top}}
 	);
 }
 
-void SpriteBatch::quadi(std::optional<Texture*> texture_argument, const Rectf& scr, const Recti& texturecoord, bool flip_x, const glm::vec4& tint)
+void SpriteBatch::quadi(
+	std::optional<Texture*> texture_argument,
+	const Rectf& scr,
+	const Recti& texturecoord,
+	bool flip_x,
+	const glm::vec4& tint
+)
 {
 	Texture* texture = texture_argument.value_or(&white_texture);
 	quadf(texture, scr, get_sprite(*texture, texturecoord), flip_x, tint);
@@ -176,7 +189,7 @@ void SpriteBatch::quadi(std::optional<Texture*> texture_argument, const Rectf& s
 
 void SpriteBatch::submit()
 {
-	if(quads == 0)
+	if (quads == 0)
 	{
 		return;
 	}
@@ -185,8 +198,7 @@ void SpriteBatch::submit()
 	glBindVertexArray(va);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vb);
-	glBufferSubData
-	(
+	glBufferSubData(
 		GL_ARRAY_BUFFER,
 		0,
 		static_cast<GLsizeiptr>(sizeof(float) * data.size()),
@@ -199,24 +211,18 @@ void SpriteBatch::submit()
 	current_texture = nullptr;
 }
 
-
 Render2::Render2()
 	// todo(Gustav): move quad_description and quad_layout to a seperate setup
-	: quad_description
-	(
-		{
-			{VertexType::position2, "position"},
-			{VertexType::color4, "color"},
-			{VertexType::texture2, "uv"}
-		}
-	)
-	, quad_layout
-	(
-		compile_shader_layout(compile_attribute_layouts({quad_description}), quad_description)
-	)
-	, quad_shader
-	(
-		R"glsl(
+	: quad_description(
+		  {{VertexType::position2, "position"},
+		   {VertexType::color4, "color"},
+		   {VertexType::texture2, "uv"}}
+	  )
+	, quad_layout(
+		  compile_shader_layout(compile_attribute_layouts({quad_description}), quad_description)
+	  )
+	, quad_shader(
+		  R"glsl(
 			#version 430 core
 			in vec3 position;
 			in vec4 color;
@@ -235,7 +241,7 @@ Render2::Render2()
 				gl_Position = view_projection * transform * vec4(position, 1.0);
 			}
 		)glsl"sv,
-		R"glsl(
+		  R"glsl(
 			#version 430 core
 
 			in vec4 varying_color;
@@ -250,8 +256,8 @@ Render2::Render2()
 				color = texture(uniform_texture, varying_uv) * varying_color;
 			}
 		)glsl"sv,
-		quad_layout
-	)
+		  quad_layout
+	  )
 	, view_projection_uniform(quad_shader.get_uniform("view_projection"))
 	, transform_uniform(quad_shader.get_uniform("transform"))
 	, texture_uniform(quad_shader.get_uniform("uniform_texture"))
@@ -262,4 +268,4 @@ Render2::Render2()
 	// todo(Gustav): verify mesh layout with SpriteBatch
 }
 
-}
+}  //  namespace render

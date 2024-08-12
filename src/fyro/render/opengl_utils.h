@@ -14,7 +14,6 @@ struct OpenglStates
 	OpenglStates& with_depth_test(bool t);
 };
 
-
 void setup_opengl_debug();
 
 void opengl_setup(OpenglStates* states);
@@ -23,4 +22,4 @@ void opengl_set3d(OpenglStates* states);
 
 void apply(OpenglStates* current_states, const OpenglStates& new_states);
 
-}
+}  //  namespace render

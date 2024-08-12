@@ -14,12 +14,10 @@ void set_gl_viewport(const Recti& r)
 	glViewport(r.left, r.bottom, r.get_width(), r.get_height());
 }
 
-
 RenderLayer2::~RenderLayer2()
 {
 	batch->submit();
 }
-
 
 RenderLayer2::RenderLayer2(Layer&& l, SpriteBatch* b)
 	: Layer(l)
@@ -32,12 +30,10 @@ RenderLayer3::RenderLayer3(Layer&& l)
 {
 }
 
-
 Layer create_layer(const ViewportDef& vp)
 {
 	return {{vp.virtual_width, vp.virtual_height}, vp.screen_rect};
 }
-
 
 RenderLayer2 create_layer2(const RenderCommand& rc, const ViewportDef& vp)
 {
@@ -68,7 +64,6 @@ RenderLayer3 create_layer3(const RenderCommand& rc, const ViewportDef& vp)
 	return RenderLayer3{create_layer(vp)};
 }
 
-
 glm::vec2 Layer::mouse_to_world(const glm::vec2& p) const
 {
 	// transform from mouse pixels to window 0-1
@@ -76,10 +71,9 @@ glm::vec2 Layer::mouse_to_world(const glm::vec2& p) const
 	return viewport_aabb_in_worldspace.from01(n);
 }
 
-
 ViewportDef create_viewport(const LayoutData& ld, const glm::ivec2& size)
 {
-	if(ld.style==ViewportStyle::black_bars)
+	if (ld.style == ViewportStyle::black_bars)
 	{
 		return fit_with_black_bars(ld.requested_width, ld.requested_height, size.x, size.y);
 	}
@@ -89,11 +83,9 @@ ViewportDef create_viewport(const LayoutData& ld, const glm::ivec2& size)
 	}
 }
 
-
-void
-RenderCommand::clear(const glm::vec3& color, const LayoutData& ld) const
+void RenderCommand::clear(const glm::vec3& color, const LayoutData& ld) const
 {
-	if(ld.style == ViewportStyle::extended)
+	if (ld.style == ViewportStyle::extended)
 	{
 		glClearColor(color.r, color.g, color.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -105,20 +97,17 @@ RenderCommand::clear(const glm::vec3& color, const LayoutData& ld) const
 	}
 }
 
-
 RenderLayer2 with_layer2(const RenderCommand& rc, const LayoutData& ld)
 {
 	const auto vp = create_viewport(ld, rc.size);
 	return create_layer2(rc, vp);
 }
 
-
 RenderLayer3 with_layer3(const RenderCommand& rc, const LayoutData& ld)
 {
 	const auto vp = create_viewport(ld, rc.size);
 	return create_layer3(rc, vp);
 }
-
 
 Layer with_layer(const InputCommand& rc, const LayoutData& ld)
 {
@@ -127,4 +116,4 @@ Layer with_layer(const InputCommand& rc, const LayoutData& ld)
 }
 
 
-}
+}  //  namespace render

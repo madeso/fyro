@@ -8,7 +8,6 @@
 #include "fyro/dependencies/dependency_opengl.h"
 #include "fyro/log.h"
 
-
 namespace render
 {
 
@@ -24,8 +23,7 @@ namespace
 		glGenTextures(1, &texture);
 		return texture;
 	}
-}
-
+}  //  namespace
 
 Texture::Texture()
 	: id(invalid_id)
@@ -34,13 +32,8 @@ Texture::Texture()
 {
 }
 
-
-Texture::Texture
-(
-	void* pixel_data, int w, int h,
-	TextureEdge te,
-	TextureRenderStyle trs,
-	Transparency t
+Texture::Texture(
+	void* pixel_data, int w, int h, TextureEdge te, TextureRenderStyle trs, Transparency t
 )
 	: id(create_texture())
 	, width(w)
@@ -61,37 +54,35 @@ Texture::Texture
 
 	const auto include_transparency = t != Transparency::exclude;
 
-	if(pixel_data == nullptr)
+	if (pixel_data == nullptr)
 	{
 		LOG_ERROR("ERROR: Failed to load image.");
 		unload();
 	}
 	else
 	{
-		glTexImage2D
-		(
+		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
 			include_transparency ? GL_RGBA : GL_RGB,
-			width, height,
+			width,
+			height,
 			0,
 			include_transparency ? GL_RGBA : GL_RGB,
 			GL_UNSIGNED_BYTE,
 			pixel_data
 		);
-		if(render_pixels == false)
+		if (render_pixels == false)
 		{
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
 }
 
-
 Texture::~Texture()
 {
 	unload();
 }
-
 
 Texture::Texture(Texture&& rhs)
 	: id(rhs.id)
@@ -103,9 +94,7 @@ Texture::Texture(Texture&& rhs)
 	rhs.height = invalid_size;
 }
 
-
-void
-Texture::operator=(Texture&& rhs)
+void Texture::operator=(Texture&& rhs)
 {
 	unload();
 
@@ -118,11 +107,9 @@ Texture::operator=(Texture&& rhs)
 	rhs.height = invalid_size;
 }
 
-
-void
-Texture::unload()
+void Texture::unload()
 {
-	if(id != invalid_id)
+	if (id != invalid_id)
 	{
 		glDeleteTextures(1, &id);
 		id = invalid_id;
@@ -132,21 +119,19 @@ Texture::unload()
 	height = invalid_size;
 }
 
-
-void
-bind_texture(const Uniform& uniform, const Texture& texture)
+void bind_texture(const Uniform& uniform, const Texture& texture)
 {
-	if(uniform.is_valid() == false) { return; }
+	if (uniform.is_valid() == false)
+	{
+		return;
+	}
 	ASSERT(uniform.texture >= 0);
 
 	glActiveTexture(Cint_to_glenum(GL_TEXTURE0 + uniform.texture));
 	glBindTexture(GL_TEXTURE_2D, texture.id);
 }
 
-
-Texture
-load_image_from_bytes
-(
+Texture load_image_from_bytes(
 	const unsigned char* image_source,
 	int size,
 	TextureEdge te,
@@ -159,16 +144,13 @@ load_image_from_bytes
 	int width = 0;
 	int height = 0;
 	int junk_channels = 0;
-	
+
 	stbi_set_flip_vertically_on_load(true);
-	auto* pixel_data = stbi_load_from_memory
-	(
-		image_source, size,
-		&width, &height,
-		&junk_channels, include_transparency ? 4 : 3
+	auto* pixel_data = stbi_load_from_memory(
+		image_source, size, &width, &height, &junk_channels, include_transparency ? 4 : 3
 	);
 
-	if(pixel_data == nullptr)
+	if (pixel_data == nullptr)
 	{
 		LOG_ERROR("ERROR: Failed to load image from image source");
 		return {};
@@ -176,7 +158,7 @@ load_image_from_bytes
 
 	auto loaded = Texture{pixel_data, width, height, te, trs, t};
 
-	if(pixel_data != nullptr)
+	if (pixel_data != nullptr)
 	{
 		stbi_image_free(pixel_data);
 	}
@@ -184,18 +166,11 @@ load_image_from_bytes
 	return loaded;
 }
 
-
-Texture
-load_image_from_embedded
-(
-	const embedded_binary& image_binary,
-	TextureEdge te,
-	TextureRenderStyle trs,
-	Transparency t
+Texture load_image_from_embedded(
+	const embedded_binary& image_binary, TextureEdge te, TextureRenderStyle trs, Transparency t
 )
 {
-	return load_image_from_bytes
-	(
+	return load_image_from_bytes(
 		reinterpret_cast<const unsigned char*>(image_binary.data),
 		Cunsigned_int_to_int(image_binary.size),
 		te,
@@ -204,21 +179,9 @@ load_image_from_embedded
 	);
 }
 
-
-Texture
-load_image_from_color
-(
-	u32 pixel,
-	TextureEdge te,
-	TextureRenderStyle trs,
-	Transparency t
-)
+Texture load_image_from_color(u32 pixel, TextureEdge te, TextureRenderStyle trs, Transparency t)
 {
-	return
-	{
-		&pixel, 1, 1, te, trs, t
-	};
+	return {&pixel, 1, 1, te, trs, t};
 }
 
-}
-
+}  //  namespace render

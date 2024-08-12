@@ -6,14 +6,12 @@
 #include "fyro/dependencies/dependency_opengl.h"
 #include "fyro/dependencies/dependency_sdl.h"
 
-
 namespace render
 {
 
-const char*
-opengl_error_to_string(GLenum error_code)
+const char* opengl_error_to_string(GLenum error_code)
 {
-	switch(error_code)
+	switch (error_code)
 	{
 	case GL_INVALID_ENUM: return "INVALID_ENUM"; break;
 	case GL_INVALID_VALUE: return "INVALID_VALUE"; break;
@@ -30,13 +28,11 @@ opengl_error_to_string(GLenum error_code)
 	}
 }
 
-
 namespace
 {
-	const char*
-	source_to_string(GLenum source)
+	const char* source_to_string(GLenum source)
 	{
-		switch(source)
+		switch (source)
 		{
 		case GL_DEBUG_SOURCE_API_ARB: return "API"; break;
 		case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB: return "Window System"; break;
@@ -48,10 +44,9 @@ namespace
 		}
 	}
 
-	const char*
-	type_to_string(GLenum type)
+	const char* type_to_string(GLenum type)
 	{
-		switch(type)
+		switch (type)
 		{
 		case GL_DEBUG_TYPE_ERROR_ARB: return "Error"; break;
 		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: return "Deprecated Behaviour"; break;
@@ -63,10 +58,9 @@ namespace
 		}
 	}
 
-	const char*
-	severity_to_string(GLenum severity)
+	const char* severity_to_string(GLenum severity)
 	{
-		switch(severity)
+		switch (severity)
 		{
 		case GL_DEBUG_SEVERITY_HIGH_ARB: return "high"; break;
 		case GL_DEBUG_SEVERITY_MEDIUM_ARB: return "medium"; break;
@@ -75,41 +69,38 @@ namespace
 		}
 	}
 
-}
+}  //  namespace
 
-
-void APIENTRY
-on_opengl_error
-(
-		GLenum source,
-		GLenum type,
-		GLuint id,
-		GLenum severity,
-		GLsizei /*length*/,
-		const GLchar* message,
-		const GLvoid* /*userParam*/
+void APIENTRY on_opengl_error(
+	GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei /*length*/,
+	const GLchar* message,
+	const GLvoid* /*userParam*/
 )
 {
 	// ignore non-significant error/warning codes
-	if(type == GL_DEBUG_TYPE_OTHER_ARB)
+	if (type == GL_DEBUG_TYPE_OTHER_ARB)
 	{
 		return;
 	}
 
 	// only display the first 10
 	static int ErrorCount = 0;
-	if(ErrorCount > 10)
+	if (ErrorCount > 10)
 	{
 		return;
 	}
 	++ErrorCount;
 
-	LOG_ERROR
-	(
+	LOG_ERROR(
 		"---------------\n"
 		"Debug message ({}): {}\n"
 		"Source {} type: {} Severity: {}",
-		id, message,
+		id,
+		message,
 		source_to_string(source),
 		type_to_string(type),
 		severity_to_string(severity)
@@ -117,41 +108,26 @@ on_opengl_error
 	// DIE("OpenGL error");
 }
 
-
-
-void
-setup_opengl_debug()
+void setup_opengl_debug()
 {
 	const bool has_debug = GLAD_GL_ARB_debug_output == 1;
-	if(has_debug)
+	if (has_debug)
 	{
 		LOG_INFO("Enabling OpenGL debug output");
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
 		glDebugMessageCallbackARB(on_opengl_error, nullptr);
-		glDebugMessageControlARB
-		(
-			GL_DONT_CARE,
-			GL_DONT_CARE,
-			GL_DONT_CARE,
-			0,
-			nullptr,
-			GL_TRUE
-		);
+		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	}
 }
 
-
-
 template<typename T, typename TChange>
-void apply_generic_state(std::optional<T>* current_state, std::optional<T> new_state, TChange change_function)
+void apply_generic_state(
+	std::optional<T>* current_state, std::optional<T> new_state, TChange change_function
+)
 {
-	if
-	(
-		new_state.has_value() == false
-		||
-		(current_state->has_value() && **current_state == *new_state)
-	)
+	if (new_state.has_value() == false
+		|| (current_state->has_value() && **current_state == *new_state))
 	{
 		return;
 	}
@@ -164,12 +140,12 @@ void apply_generic_state(std::optional<T>* current_state, std::optional<T> new_s
 
 void apply_state(std::optional<bool>* current_state, std::optional<bool> new_state, GLenum gl_type)
 {
-	apply_generic_state<bool>
-	(
-		current_state, new_state,
+	apply_generic_state<bool>(
+		current_state,
+		new_state,
 		[gl_type](bool enable)
 		{
-			if(enable)
+			if (enable)
 			{
 				glEnable(gl_type);
 			}
@@ -181,60 +157,51 @@ void apply_state(std::optional<bool>* current_state, std::optional<bool> new_sta
 	);
 }
 
+OpenglStates& OpenglStates::with_cull_face(bool t)
+{
+	cull_face = t;
+	return *this;
+}
 
-OpenglStates& OpenglStates::with_cull_face(bool t) { cull_face = t; return *this; }
-OpenglStates& OpenglStates::with_blending(bool t) { blending = t; return *this; }
-OpenglStates& OpenglStates::with_depth_test(bool t) { depth_test = t; return *this; }
+OpenglStates& OpenglStates::with_blending(bool t)
+{
+	blending = t;
+	return *this;
+}
 
+OpenglStates& OpenglStates::with_depth_test(bool t)
+{
+	depth_test = t;
+	return *this;
+}
 
 void apply(OpenglStates* current_states, const OpenglStates& new_states)
 {
-	#define APPLY_STATE(name, gl) apply_state(&current_states->name, new_states.name, gl)
+#define APPLY_STATE(name, gl) apply_state(&current_states->name, new_states.name, gl)
 	APPLY_STATE(cull_face, GL_CULL_FACE);
 	APPLY_STATE(blending, GL_BLEND);
 	APPLY_STATE(depth_test, GL_DEPTH_TEST);
-	#undef APPLY_STATE
+#undef APPLY_STATE
 }
-
-
 
 void opengl_setup(OpenglStates* state)
 {
 	setup_opengl_debug();
 
-	apply
-	(
-		state,
-		OpenglStates{}
-			.with_cull_face(true)
-	);
-	
+	apply(state, OpenglStates{}.with_cull_face(true));
+
 	glCullFace(GL_BACK);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-
 void opengl_set2d(OpenglStates* states)
 {
-	apply
-	(
-		states,
-		OpenglStates{}
-			.with_depth_test(false)
-			.with_blending(true)
-	);
+	apply(states, OpenglStates{}.with_depth_test(false).with_blending(true));
 }
-
 
 void opengl_set3d(OpenglStates* states)
 {
-	apply
-	(
-		states,
-		OpenglStates{}
-			.with_depth_test(true)
-			.with_blending(false)
-	);
+	apply(states, OpenglStates{}.with_depth_test(true).with_blending(false));
 }
 
-}
+}  //  namespace render

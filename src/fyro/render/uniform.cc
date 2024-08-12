@@ -10,7 +10,6 @@ Uniform::Uniform()
 {
 }
 
-
 Uniform::Uniform(const std::string& n, int l, unsigned int sp)
 	: name(n)
 	, location(l)
@@ -18,17 +17,14 @@ Uniform::Uniform(const std::string& n, int l, unsigned int sp)
 {
 }
 
-
 Uniform::operator bool() const
 {
 	return is_valid();
 }
 
-
-bool
-Uniform::is_valid() const
+bool Uniform::is_valid() const
 {
 	return location >= 0;
 }
 
-}
+}  //  namespace render

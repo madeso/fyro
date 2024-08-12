@@ -9,19 +9,19 @@
 //
 
 #ifdef GetCurrentDirectory
-#undef GetCurrentDirectory
+	#undef GetCurrentDirectory
 #endif
 
 #ifdef CreateWindow
-#undef CreateWindow
+	#undef CreateWindow
 #endif
 
 #ifdef LoadImage
-#undef LoadImage
+	#undef LoadImage
 #endif
 
 #ifdef DrawText
-#undef DrawText
+	#undef DrawText
 #endif
 
 
@@ -31,15 +31,15 @@
 //
 
 #ifdef DELETE
-#undef DELETE
+	#undef DELETE
 #endif
 
 #ifdef OUT
-#undef OUT
+	#undef OUT
 #endif
 
 #ifdef RGB
-#undef RGB
+	#undef RGB
 #endif
 
 
@@ -49,19 +49,19 @@
 //
 
 #ifdef near
-#undef near
+	#undef near
 #endif
 
 #ifdef far
-#undef far
+	#undef far
 #endif
 
 #ifdef min
-#undef min
+	#undef min
 #endif
 
 #ifdef max
-#undef max
+	#undef max
 #endif
 
 
@@ -71,17 +71,17 @@
 //
 
 #ifdef SendMessage
-#undef SendMessage
+	#undef SendMessage
 #endif
 
 #ifdef GetObject
-#undef GetObject
+	#undef GetObject
 #endif
 
 #ifdef RegisterClass
-#undef RegisterClass
+	#undef RegisterClass
 #endif
 
 #ifdef CreateFile
-#undef CreateFile
+	#undef CreateFile
 #endif

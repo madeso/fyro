@@ -7,19 +7,21 @@
 
 namespace
 {
-	bool& is_exception_enabled()
-	{
-		static bool enabled = false;
-		return enabled;
-	}
-}
-
-
-void on_assert_failure(std::string_view function, std::string_view reason, std::string_view file, int line)
+bool& is_exception_enabled()
 {
-	const auto text = fmt::format("{}({}): Assertion failed in {}: {}", file, line, function, reason);
-	
-	if(is_exception_enabled())
+	static bool enabled = false;
+	return enabled;
+}
+}  //  namespace
+
+void on_assert_failure(
+	std::string_view function, std::string_view reason, std::string_view file, int line
+)
+{
+	const auto text
+		= fmt::format("{}({}): Assertion failed in {}: {}", file, line, function, reason);
+
+	if (is_exception_enabled())
 	{
 		throw text;
 	}
@@ -30,7 +32,6 @@ void on_assert_failure(std::string_view function, std::string_view reason, std::
 		std::abort();
 	}
 }
-
 
 void enable_exception_on_assert()
 {

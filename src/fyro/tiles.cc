@@ -20,120 +20,116 @@ std::shared_ptr<render::Texture> load_texture(const std::string& path);
 #include <tmxlite/TileLayer.hpp>
 #include <tmxlite/Tileset.hpp>
 
-
 int floor_to_int(float f)
 {
 	return static_cast<int>(floorf(f));
 }
 
-
 namespace
 {
-	void flipY(glm::vec2* v0, glm::vec2* v1, glm::vec2* v2, glm::vec2* v3)
-	{
-		//Flip Y
-		glm::vec2 tmp = *v0;
-		v0->y = v2->y;
-		v1->y = v2->y;
-		v2->y = tmp.y ;
-		v3->y = v2->y  ;
-	}
-
-	void flipX(glm::vec2* v0, glm::vec2* v1, glm::vec2* v2, glm::vec2* v3)
-	{
-		//Flip X
-		glm::vec2 tmp = *v0;
-		v0->x = v1->x;
-		v1->x = tmp.x;
-		v2->x = v3->x;
-		v3->x = v0->x ;
-	}
-
-	void flipD(glm::vec2*, glm::vec2* v1, glm::vec2*, glm::vec2* v3)
-	{
-		//Diagonal flip
-		glm::vec2 tmp = *v1;
-		v1->x = v3->x;
-		v1->y = v3->y;
-		v3->x = tmp.x;
-		v3->y = tmp.y;
-	}
-
-	void doFlips(std::uint8_t bits, glm::vec2 *v0, glm::vec2 *v1, glm::vec2 *v2, glm::vec2 *v3)
-	{
-		//0000 = no change
-		//0100 = vertical = swap y axis
-		//1000 = horizontal = swap x axis
-		//1100 = horiz + vert = swap both axes = horiz+vert = rotate 180 degrees
-		//0010 = diag = rotate 90 degrees right and swap x axis
-		//0110 = diag+vert = rotate 270 degrees right
-		//1010 = horiz+diag = rotate 90 degrees right
-		//1110 = horiz+vert+diag = rotate 90 degrees right and swap y axis
-		if(!(bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			!(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			!(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//Shortcircuit tests for nothing to do
-			return;
-		}
-		else if(!(bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			!(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//0100
-			flipY(v0,v1,v2,v3);
-		}
-		else if((bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			!(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			!(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//1000
-			flipX(v0,v1,v2,v3);
-		}
-		else if((bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			!(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//1100
-			flipY(v0,v1,v2,v3);
-			flipX(v0,v1,v2,v3);
-		}
-		else if(!(bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			!(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//0010
-			flipD(v0,v1,v2,v3);
-		}
-		else if(!(bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//0110
-			flipX(v0,v1,v2,v3);
-			flipD(v0,v1,v2,v3);
-		}
-		else if((bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			!(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//1010
-			flipY(v0,v1,v2,v3);
-			flipD(v0,v1,v2,v3);
-		}
-		else if((bits & tmx::TileLayer::FlipFlag::Horizontal) &&
-			(bits & tmx::TileLayer::FlipFlag::Vertical) &&
-			(bits & tmx::TileLayer::FlipFlag::Diagonal) )
-		{
-			//1110
-			flipY(v0,v1,v2,v3);
-			flipX(v0,v1,v2,v3);
-			flipD(v0,v1,v2,v3);
-		}
-	}
+void flipY(glm::vec2* v0, glm::vec2* v1, glm::vec2* v2, glm::vec2* v3)
+{
+	//Flip Y
+	glm::vec2 tmp = *v0;
+	v0->y = v2->y;
+	v1->y = v2->y;
+	v2->y = tmp.y;
+	v3->y = v2->y;
 }
 
+void flipX(glm::vec2* v0, glm::vec2* v1, glm::vec2* v2, glm::vec2* v3)
+{
+	//Flip X
+	glm::vec2 tmp = *v0;
+	v0->x = v1->x;
+	v1->x = tmp.x;
+	v2->x = v3->x;
+	v3->x = v0->x;
+}
 
+void flipD(glm::vec2*, glm::vec2* v1, glm::vec2*, glm::vec2* v3)
+{
+	//Diagonal flip
+	glm::vec2 tmp = *v1;
+	v1->x = v3->x;
+	v1->y = v3->y;
+	v3->x = tmp.x;
+	v3->y = tmp.y;
+}
+
+void doFlips(std::uint8_t bits, glm::vec2* v0, glm::vec2* v1, glm::vec2* v2, glm::vec2* v3)
+{
+	//0000 = no change
+	//0100 = vertical = swap y axis
+	//1000 = horizontal = swap x axis
+	//1100 = horiz + vert = swap both axes = horiz+vert = rotate 180 degrees
+	//0010 = diag = rotate 90 degrees right and swap x axis
+	//0110 = diag+vert = rotate 270 degrees right
+	//1010 = horiz+diag = rotate 90 degrees right
+	//1110 = horiz+vert+diag = rotate 90 degrees right and swap y axis
+	if (! (bits & tmx::TileLayer::FlipFlag::Horizontal)
+		&& ! (bits & tmx::TileLayer::FlipFlag::Vertical)
+		&& ! (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//Shortcircuit tests for nothing to do
+		return;
+	}
+	else if (! (bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//0100
+		flipY(v0, v1, v2, v3);
+	}
+	else if ((bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//1000
+		flipX(v0, v1, v2, v3);
+	}
+	else if ((bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//1100
+		flipY(v0, v1, v2, v3);
+		flipX(v0, v1, v2, v3);
+	}
+	else if (! (bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//0010
+		flipD(v0, v1, v2, v3);
+	}
+	else if (! (bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//0110
+		flipX(v0, v1, v2, v3);
+		flipD(v0, v1, v2, v3);
+	}
+	else if ((bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && ! (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//1010
+		flipY(v0, v1, v2, v3);
+		flipD(v0, v1, v2, v3);
+	}
+	else if ((bits & tmx::TileLayer::FlipFlag::Horizontal)
+			 && (bits & tmx::TileLayer::FlipFlag::Vertical)
+			 && (bits & tmx::TileLayer::FlipFlag::Diagonal))
+	{
+		//1110
+		flipY(v0, v1, v2, v3);
+		flipX(v0, v1, v2, v3);
+		flipD(v0, v1, v2, v3);
+	}
+}
+}  //  namespace
 
 struct AnimationState
 {
@@ -148,20 +144,12 @@ using RenderQuad = std::array<render::Vertex2, 4>;
 
 glm::vec2 transform_tile_pos(const glm::vec2& src, const glm::vec2& bounds)
 {
-	return
-	{
-		src.x,
-		bounds.y - src.y
-	};
+	return {src.x, bounds.y - src.y};
 }
 
 glm::vec2 transform_tile_uv(const glm::vec2& src, const glm::ivec2& size)
 {
-	return
-	{
-		src.x / static_cast<float>(size.x),
-		1.0f - (src.y / static_cast<float>(size.y))
-	};
+	return {src.x / static_cast<float>(size.x), 1.0f - (src.y / static_cast<float>(size.y))};
 }
 
 struct ChunkArray
@@ -187,7 +175,7 @@ struct ChunkArray
 
 	~ChunkArray() = default;
 	ChunkArray(const ChunkArray&) = delete;
-	ChunkArray& operator = (const ChunkArray&) = delete;
+	ChunkArray& operator=(const ChunkArray&) = delete;
 
 	void reset()
 	{
@@ -206,37 +194,46 @@ struct ChunkArray
 
 	void draw(render::SpriteBatch& batch) const
 	{
-		for(const auto& q: tiles)
+		for (const auto& q: tiles)
 		{
 			batch.quad(m_texture.get(), q[0], q[1], q[2], q[3]);
 		}
 	}
 };
 
-void add_collision(MapImpl* impl, const glm::vec2& pos, const glm::vec2& size, const tmx::Tileset::Tile& tile);
+void add_collision(
+	MapImpl* impl, const glm::vec2& pos, const glm::vec2& size, const tmx::Tileset::Tile& tile
+);
 
 struct Chunk
 {
 	MapImpl* owner;
 
-	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;    // animation catalogue
+	std::map<std::uint32_t, tmx::Tileset::Tile> m_animTiles;  // animation catalogue
 	glm::vec2 bounds;
 
 	glm::vec2 m_position;
-	float layerOpacity;     // opacity of the layer
-	glm::vec2 layerOffset;   // Layer offset
-	glm::ivec2 mapTileSize;   // general Tilesize of Map
-	glm::ivec2 chunkTileCount;   // chunk tilecount
-	std::vector<tmx::TileLayer::Tile> m_chunkTileIDs; // stores all tiles in this chunk for later manipulation
-	std::vector<glm::vec4> m_chunkColors; // stores colors for extended color effects
-	std::vector<AnimationState> m_activeAnimations;     // Animations to be done in this chunk
+	float layerOpacity;	 // opacity of the layer
+	glm::vec2 layerOffset;	// Layer offset
+	glm::ivec2 mapTileSize;	 // general Tilesize of Map
+	glm::ivec2 chunkTileCount;	// chunk tilecount
+	std::vector<tmx::TileLayer::Tile>
+		m_chunkTileIDs;	 // stores all tiles in this chunk for later manipulation
+	std::vector<glm::vec4> m_chunkColors;  // stores colors for extended color effects
+	std::vector<AnimationState> m_activeAnimations;	 // Animations to be done in this chunk
 	std::vector<std::unique_ptr<ChunkArray>> m_chunkArrays;
 
-	void setPosition(const glm::vec2& p) { m_position = p; }
-	glm::vec2 getPosition() const { return m_position; }
+	void setPosition(const glm::vec2& p)
+	{
+		m_position = p;
+	}
 
-	Chunk
-	(
+	glm::vec2 getPosition() const
+	{
+		return m_position;
+	}
+
+	Chunk(
 		MapImpl* o,
 		const tmx::TileLayer& layer,
 		std::vector<const tmx::Tileset*> tilesets,
@@ -253,7 +250,7 @@ struct Chunk
 	{
 		setPosition(position);
 		layerOpacity = layer.getOpacity();
-		glm::vec4 vertColour = glm::vec4{1.0f ,1.0f, 1.0f, layerOpacity};
+		glm::vec4 vertColour = glm::vec4{1.0f, 1.0f, 1.0f, layerOpacity};
 		auto offset = layer.getOffset();
 		layerOffset.x = static_cast<float>(offset.x);
 		layerOffset.y = static_cast<float>(offset.y);
@@ -263,9 +260,9 @@ struct Chunk
 		const auto& tileIDs = layer.getTiles();
 
 		//go through the tiles and create all arrays (for latter manipulation)
-		for (const auto& ts : tilesets)
+		for (const auto& ts: tilesets)
 		{
-			if(ts->getImagePath().empty())
+			if (ts->getImagePath().empty())
 			{
 				std::cout << "This example does not support Collection of Images tilesets\n";
 				std::cout << "Chunks using " + ts->getName() + " will not be created\n";
@@ -273,7 +270,9 @@ struct Chunk
 			}
 
 			// std::cout << "loading tile texture " << ts->getImagePath() << "\n";
-			m_chunkArrays.emplace_back(std::make_unique<ChunkArray>(load_texture(ts->getImagePath()), *ts));
+			m_chunkArrays.emplace_back(
+				std::make_unique<ChunkArray>(load_texture(ts->getImagePath()), *ts)
+			);
 		}
 		int xPos = static_cast<int>(position.x / static_cast<float>(tileSize.x));
 		int yPos = static_cast<int>(position.y / static_cast<float>(tileSize.y));
@@ -291,7 +290,7 @@ struct Chunk
 
 	~Chunk() = default;
 	Chunk(const Chunk&) = delete;
-	Chunk& operator = (const Chunk&) = delete;
+	Chunk& operator=(const Chunk&) = delete;
 
 	void generateTiles(bool registerAnimation, std::vector<const tmx::Tileset*> tilesets)
 	{
@@ -301,7 +300,7 @@ struct Chunk
 		}
 
 		std::size_t tileset_index = 0;
-		for (const auto& ca : m_chunkArrays)
+		for (const auto& ca: m_chunkArrays)
 		{
 			const tmx::Tileset* tset = tilesets.empty() ? nullptr : tilesets[tileset_index];
 			tileset_index += 1;
@@ -316,56 +315,64 @@ struct Chunk
 					if (idx < m_chunkTileIDs.size() && m_chunkTileIDs[idx].ID >= ca->m_firstGID
 						&& m_chunkTileIDs[idx].ID <= ca->m_lastGID)
 					{
-						if (registerAnimation && m_animTiles.find(m_chunkTileIDs[idx].ID) != m_animTiles.end())
+						if (registerAnimation
+							&& m_animTiles.find(m_chunkTileIDs[idx].ID) != m_animTiles.end())
 						{
 							AnimationState as;
 							as.animTile = m_animTiles[m_chunkTileIDs[idx].ID];
 							as.startTime = 0.0f;
-							as.tileCords = glm::ivec2(x,y);
+							as.tileCords = glm::ivec2(x, y);
 							m_activeAnimations.push_back(as);
 						}
 
-						glm::vec2 tileOffset
-						{
+						glm::vec2 tileOffset{
 							x * mapTileSize.x,
 							y * mapTileSize.y + mapTileSize.y - static_cast<int>(ca->tileSetSize.y)
 						};
 
 						auto idIndex = m_chunkTileIDs[idx].ID - ca->m_firstGID;
-						glm::vec2 tileIndex
-						{
-							(idIndex % static_cast<unsigned int>(ca->tsTileCount.x)) * ca->tileSetSize.x,
-							(idIndex / static_cast<unsigned int>(ca->tsTileCount.x)) * ca->tileSetSize.y
+						glm::vec2 tileIndex{
+							(idIndex % static_cast<unsigned int>(ca->tsTileCount.x))
+								* ca->tileSetSize.x,
+							(idIndex / static_cast<unsigned int>(ca->tsTileCount.x))
+								* ca->tileSetSize.y
 						};
-						RenderQuad tile =
-						{
-							::render::Vertex2
-							{
-								transform_tile_pos(tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds),
-								m_chunkColors[idx],
-								transform_tile_uv(tileIndex + glm::vec2(0.f, ca->tileSetSize.y), ca->texSize)
-							},
-							::render::Vertex2
-							{
-								transform_tile_pos(tileOffset + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), bounds),
-								m_chunkColors[idx],
-								transform_tile_uv(tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y), ca->texSize)
-							},
-							::render::Vertex2
-							{
-								transform_tile_pos(tileOffset + glm::vec2(ca->tileSetSize.x, 0.f), bounds),
-								m_chunkColors[idx],
-								transform_tile_uv(tileIndex + glm::vec2(ca->tileSetSize.x, 0.f), ca->texSize)
-							},
-							::render::Vertex2
-							{
-								transform_tile_pos(tileOffset, bounds),
-								m_chunkColors[idx],
-								transform_tile_uv(tileIndex, ca->texSize)
-							}
-						};
-						doFlips
-						(
+						RenderQuad tile
+							= {::render::Vertex2{
+								   transform_tile_pos(
+									   tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds
+								   ),
+								   m_chunkColors[idx],
+								   transform_tile_uv(
+									   tileIndex + glm::vec2(0.f, ca->tileSetSize.y), ca->texSize
+								   )
+							   },
+							   ::render::Vertex2{
+								   transform_tile_pos(
+									   tileOffset + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y),
+									   bounds
+								   ),
+								   m_chunkColors[idx],
+								   transform_tile_uv(
+									   tileIndex + glm::vec2(ca->tileSetSize.x, ca->tileSetSize.y),
+									   ca->texSize
+								   )
+							   },
+							   ::render::Vertex2{
+								   transform_tile_pos(
+									   tileOffset + glm::vec2(ca->tileSetSize.x, 0.f), bounds
+								   ),
+								   m_chunkColors[idx],
+								   transform_tile_uv(
+									   tileIndex + glm::vec2(ca->tileSetSize.x, 0.f), ca->texSize
+								   )
+							   },
+							   ::render::Vertex2{
+								   transform_tile_pos(tileOffset, bounds),
+								   m_chunkColors[idx],
+								   transform_tile_uv(tileIndex, ca->texSize)
+							   }};
+						doFlips(
 							m_chunkTileIDs[idx].flipFlags,
 							&tile[0].texturecoord,
 							&tile[1].texturecoord,
@@ -374,7 +381,14 @@ struct Chunk
 						);
 						ca->addTile(tile);
 
-						add_collision(owner, transform_tile_pos(tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds), bounds, *tset->getTile(m_chunkTileIDs[idx].ID));
+						add_collision(
+							owner,
+							transform_tile_pos(
+								tileOffset + glm::vec2(0.f, ca->tileSetSize.y), bounds
+							),
+							bounds,
+							*tset->getTile(m_chunkTileIDs[idx].ID)
+						);
 					}
 					idx++;
 				}
@@ -384,11 +398,11 @@ struct Chunk
 
 	void setTile(int x, int y, tmx::TileLayer::Tile tile, bool refresh)
 	{
-		m_chunkTileIDs[calcIndexFrom(x,y)] = tile;
-		
+		m_chunkTileIDs[calcIndexFrom(x, y)] = tile;
+
 		if (refresh)
 		{
-			for (const auto& ca : m_chunkArrays)
+			for (const auto& ca: m_chunkArrays)
 			{
 				ca->reset();
 			}
@@ -401,25 +415,26 @@ struct Chunk
 		return static_cast<std::size_t>(x + y * chunkTileCount.x);
 	}
 
-	bool empty() const { return m_chunkArrays.empty(); }
+	bool empty() const
+	{
+		return m_chunkArrays.empty();
+	}
 
 	void draw(render::SpriteBatch& batch) const
 	{
 		// states.transform *= getTransform();
-		for (const auto& a : m_chunkArrays)
+		for (const auto& a: m_chunkArrays)
 		{
 			a->draw(batch);
 		}
 	}
 };
 
-
-
 struct MapLayer
 {
 	glm::ivec2 m_chunkSize;
 	glm::ivec2 m_chunkCount;
-	glm::ivec2 m_MapTileSize;   // general Tilesize of Map
+	glm::ivec2 m_MapTileSize;  // general Tilesize of Map
 	glm::vec2 m_globalBounds = {0.0f, 0.0f};
 
 	std::vector<std::unique_ptr<Chunk>> m_chunks;
@@ -432,19 +447,23 @@ struct MapLayer
 		// increasing design_chunk_size by 4; fixes render problems when mapsize != chunksize
 		// glm::vec2 design_chunk_size = glm::vec2(1024.f, 1024.f);
 		glm::ivec2 design_chunk_size = glm::vec2(512, 512);
-		
+
 		//round the chunk size to the nearest tile
 		// const auto tileSize = map.getTileSize();
 		glm::ivec2 tileSize(map.getTileSize().x, map.getTileSize().y);
-		m_chunkSize.x = floor_to_int(static_cast<float>(design_chunk_size.x) / static_cast<float>(tileSize.x)) * tileSize.x;
-		m_chunkSize.y = floor_to_int(static_cast<float>(design_chunk_size.y) / static_cast<float>(tileSize.y)) * tileSize.y;
+		m_chunkSize.x
+			= floor_to_int(static_cast<float>(design_chunk_size.x) / static_cast<float>(tileSize.x))
+			* tileSize.x;
+		m_chunkSize.y
+			= floor_to_int(static_cast<float>(design_chunk_size.y) / static_cast<float>(tileSize.y))
+			* tileSize.y;
 		m_MapTileSize.x = static_cast<int>(map.getTileSize().x);
 		m_MapTileSize.y = static_cast<int>(map.getTileSize().y);
 		const auto& layer = layers[idx]->getLayerAs<tmx::TileLayer>();
 
 		auto mapSize = map.getBounds();
 		m_globalBounds = glm::vec2{mapSize.width, mapSize.height};
-		
+
 		// create chunks
 		{
 			//look up all the tile sets and load the textures
@@ -455,7 +474,7 @@ struct MapLayer
 
 			for (auto i = tileSets.rbegin(); i != tileSets.rend(); ++i)
 			{
-				for (const auto& tile : layerIDs)
+				for (const auto& tile: layerIDs)
 				{
 					if (tile.ID >= i->getFirstGID() && tile.ID < maxID)
 					{
@@ -465,8 +484,8 @@ struct MapLayer
 				}
 				maxID = i->getFirstGID();
 			}
-			
-			for (const auto& ts : usedTileSets)
+
+			for (const auto& ts: usedTileSets)
 			{
 				if (ts->hasTransparency())
 				{
@@ -479,26 +498,29 @@ struct MapLayer
 			//calculate the number of chunks in the layer
 			//and create each one
 			const auto bounds = map.getBounds();
-			m_chunkCount.x = static_cast<int>(std::ceil(bounds.width / static_cast<float>(m_chunkSize.x)));
-			m_chunkCount.y = static_cast<int>(std::ceil(bounds.height / static_cast<float>(m_chunkSize.y)));
+			m_chunkCount.x
+				= static_cast<int>(std::ceil(bounds.width / static_cast<float>(m_chunkSize.x)));
+			m_chunkCount.y
+				= static_cast<int>(std::ceil(bounds.height / static_cast<float>(m_chunkSize.y)));
 
 			for (int y = 0; y < m_chunkCount.y; ++y)
 			{
-				glm::vec2 tileCount
-				{
+				glm::vec2 tileCount{
 					static_cast<float>(m_chunkSize.x) / static_cast<float>(tileSize.x),
 					static_cast<float>(m_chunkSize.y) / static_cast<float>(tileSize.y)
 				};
 				for (int x = 0; x < m_chunkCount.x; ++x)
 				{
 					// calculate size of each Chunk (clip against map)
-					if( static_cast<float>( (x + 1) * m_chunkSize.x) > bounds.width)
+					if (static_cast<float>((x + 1) * m_chunkSize.x) > bounds.width)
 					{
-						tileCount.x = (bounds.width - static_cast<float>(x * m_chunkSize.x)) / static_cast<float>(map.getTileSize().x);
+						tileCount.x = (bounds.width - static_cast<float>(x * m_chunkSize.x))
+									/ static_cast<float>(map.getTileSize().x);
 					}
-					if( static_cast<float>( (y + 1) * m_chunkSize.y) > bounds.height)
+					if (static_cast<float>((y + 1) * m_chunkSize.y) > bounds.height)
 					{
-						tileCount.y = (bounds.height - static_cast<float>(y * m_chunkSize.y)) / static_cast<float>(map.getTileSize().y);
+						tileCount.y = (bounds.height - static_cast<float>(y * m_chunkSize.y))
+									/ static_cast<float>(map.getTileSize().y);
 					}
 					m_chunks.emplace_back(std::make_unique<Chunk>(
 						owner,
@@ -518,24 +540,27 @@ struct MapLayer
 
 	~MapLayer() = default;
 	MapLayer(const MapLayer&) = delete;
-	MapLayer& operator = (const MapLayer&) = delete;
+	MapLayer& operator=(const MapLayer&) = delete;
 
 	MapLayer(MapLayer&&) = default;
-	MapLayer& operator = (MapLayer&&) = default;
+	MapLayer& operator=(MapLayer&&) = default;
 
-	void update(float elapsed) 
+	void update(float elapsed)
 	{
 		auto setTile = [this](int x, int y, tmx::TileLayer::Tile tile)
 		{
 			bool refresh = true;
-			int chunkX = floor_to_int(static_cast<float>(x * m_MapTileSize.x) / static_cast<float>(m_chunkSize.x));
-			int chunkY = floor_to_int(static_cast<float>(y * m_MapTileSize.y) / static_cast<float>(m_chunkSize.y));
+			int chunkX = floor_to_int(
+				static_cast<float>(x * m_MapTileSize.x) / static_cast<float>(m_chunkSize.x)
+			);
+			int chunkY = floor_to_int(
+				static_cast<float>(y * m_MapTileSize.y) / static_cast<float>(m_chunkSize.y)
+			);
 			const int chtax = x * m_MapTileSize.x - chunkX * m_chunkSize.x;
 			const int chtay = y * m_MapTileSize.y - chunkY * m_chunkSize.y;
-			glm::ivec2 chunkLocale =
-			{
-				static_cast<int>( static_cast<float>(chtax) / static_cast<float>(m_MapTileSize.x)),
-				static_cast<int>( static_cast<float>(chtay) / static_cast<float>(m_MapTileSize.y))
+			glm::ivec2 chunkLocale = {
+				static_cast<int>(static_cast<float>(chtax) / static_cast<float>(m_MapTileSize.x)),
+				static_cast<int>(static_cast<float>(chtay) / static_cast<float>(m_MapTileSize.y))
 			};
 			const auto index = chunkX + chunkY * m_chunkCount.x;
 			const auto& selectedChunk = m_chunks[static_cast<size_t>(index)];
@@ -543,9 +568,9 @@ struct MapLayer
 			selectedChunk->setTile(chunkLocale.x, chunkLocale.y, tile, refresh);
 		};
 
-		for (auto& c : m_visibleChunks) 
+		for (auto& c: m_visibleChunks)
 		{
-			for (AnimationState& as : c->m_activeAnimations) 
+			for (AnimationState& as: c->m_activeAnimations)
 			{
 				as.currentTime += elapsed;
 
@@ -554,7 +579,7 @@ struct MapLayer
 				auto x = as.animTile.animation.frames.begin();
 				while (animTime < as.currentTime)
 				{
-					if (x == as.animTile.animation.frames.end()) 
+					if (x == as.animTile.animation.frames.end())
 					{
 						x = as.animTile.animation.frames.begin();
 						as.currentTime -= animTime;
@@ -562,7 +587,7 @@ struct MapLayer
 					}
 
 					tile.ID = x->tileID;
-					animTime += static_cast<float>(x->duration)/1000.0f;
+					animTime += static_cast<float>(x->duration) / 1000.0f;
 					x++;
 				}
 
@@ -587,7 +612,7 @@ struct MapLayer
 				for (auto x = left; x < right; ++x)
 				{
 					std::size_t idx = static_cast<std::size_t>(y * m_chunkCount.x + x);
-					if (idx < m_chunks.size() && !m_chunks[idx]->empty())
+					if (idx < m_chunks.size() && ! m_chunks[idx]->empty())
 					{
 						visible.push_back(m_chunks[idx].get());
 					}
@@ -598,7 +623,7 @@ struct MapLayer
 		}
 
 
-		for (const auto& c : m_visibleChunks)
+		for (const auto& c: m_visibleChunks)
 		{
 			c->draw(batch);
 			// rt.draw(*c, states);
@@ -606,12 +631,11 @@ struct MapLayer
 	}
 };
 
-
 std::optional<MapLayer> make_layer(MapImpl* owner, const tmx::Map& map, std::size_t idx)
 {
 	const auto& layers = map.getLayers();
-	if (map.getOrientation() == tmx::Orientation::Orthogonal &&
-		idx < layers.size() && layers[idx]->getType() == tmx::Layer::Type::Tile)
+	if (map.getOrientation() == tmx::Orientation::Orthogonal && idx < layers.size()
+		&& layers[idx]->getType() == tmx::Layer::Type::Tile)
 	{
 		return MapLayer{owner, map, idx};
 	}
@@ -621,7 +645,6 @@ std::optional<MapLayer> make_layer(MapImpl* owner, const tmx::Map& map, std::siz
 	}
 }
 
-
 struct MapImpl
 {
 	std::vector<MapLayer> layers;
@@ -629,25 +652,27 @@ struct MapImpl
 	std::optional<Rectf> bounds;
 };
 
-
-void add_collision(MapImpl* impl, const glm::vec2& pos, const glm::vec2&, const tmx::Tileset::Tile& tile)
+void add_collision(
+	MapImpl* impl, const glm::vec2& pos, const glm::vec2&, const tmx::Tileset::Tile& tile
+)
 {
 	const auto& objects = tile.objectGroup.getObjects();
-	if(objects.empty()) { return; }
+	if (objects.empty())
+	{
+		return;
+	}
 
-	if(objects.size() != 1)
+	if (objects.size() != 1)
 	{
 		std::cerr << "too many collisions: " << tile.imagePath << ": "
-			<< "id=" << tile.ID << " "
-			<< tile.imagePosition.x << " " << tile.imagePosition.y
-			<< " -> " << objects.size() << "\n";
+				  << "id=" << tile.ID << " " << tile.imagePosition.x << " " << tile.imagePosition.y
+				  << " -> " << objects.size() << "\n";
 		return;
 	}
 
 	const auto& aabb = objects[0].getAABB();
 	impl->collisions.emplace_back(Rectf{aabb.width, aabb.height}.translate(pos.x, pos.y));
 }
-
 
 Map::Map()
 	: impl(std::make_unique<MapImpl>())
@@ -661,10 +686,10 @@ void Map::load_from_map(const tmx::Map& map)
 	impl->layers.clear();
 
 	const auto& layers = map.getLayers();
-	for(std::size_t index=0; index < layers.size(); index+=1)
+	for (std::size_t index = 0; index < layers.size(); index += 1)
 	{
 		auto loaded = make_layer(impl.get(), map, index);
-		if(loaded)
+		if (loaded)
 		{
 			impl->layers.emplace_back(std::move(*loaded));
 		}
@@ -676,7 +701,7 @@ void Map::load_from_map(const tmx::Map& map)
 
 void Map::update(float dt)
 {
-	for(auto& layer: impl->layers)
+	for (auto& layer: impl->layers)
 	{
 		layer.update(dt);
 	}
@@ -684,12 +709,11 @@ void Map::update(float dt)
 
 void Map::render(render::SpriteBatch& batch, const Rectf& view)
 {
-	for(auto& layer: impl->layers)
+	for (auto& layer: impl->layers)
 	{
 		layer.draw(batch, view);
 	}
 }
-
 
 const std::vector<Rectf>& Map::get_collisions() const
 {

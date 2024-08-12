@@ -54,7 +54,8 @@ namespace render
 
 struct TextPrinter
 {
-	float xx; float yy;
+	float xx;
+	float yy;
 	float scale;
 	Texture* texture;
 	SpriteBatch* batch;
@@ -62,20 +63,25 @@ struct TextPrinter
 	int pw;
 	int ph;
 
-	void get_packed_quad(int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int align_to_integer)
+	void get_packed_quad(
+		int char_index, float* xpos, float* ypos, stbtt_aligned_quad* q, int align_to_integer
+	)
 	{
 		float ipw = 1.0f / static_cast<float>(pw);
 		float iph = 1.0f / static_cast<float>(ph);
-		const stbtt_packedchar *b = packedchar + char_index;
+		const stbtt_packedchar* b = packedchar + char_index;
 
-		if (align_to_integer) {
-			float x = *xpos; // (float) STBTT_ifloor((*xpos + b->xoff) + 0.5f);
-			float y = *ypos; // (float) STBTT_ifloor((*ypos + b->yoff) + 0.5f);
+		if (align_to_integer)
+		{
+			float x = *xpos;  // (float) STBTT_ifloor((*xpos + b->xoff) + 0.5f);
+			float y = *ypos;  // (float) STBTT_ifloor((*ypos + b->yoff) + 0.5f);
 			q->x0 = x;
 			q->y0 = y;
 			q->x1 = x + (b->xoff2 - b->xoff) * scale;
 			q->y1 = y + (b->yoff2 - b->yoff) * scale;
-		} else {
+		}
+		else
+		{
 			q->x0 = *xpos + (b->xoff) * scale;
 			q->y0 = *ypos + (b->yoff) * scale;
 			q->x1 = *xpos + (b->xoff2) * scale;
@@ -92,9 +98,9 @@ struct TextPrinter
 
 	void print_string(const glm::vec4& color, const std::string& text)
 	{
-		for(auto c: text)
+		for (auto c: text)
 		{
-			if (c >= 32)// && *text < 128)
+			if (c >= 32)  // && *text < 128)
 			{
 				print_single_char(color, c);
 			}
@@ -105,9 +111,8 @@ struct TextPrinter
 	{
 		stbtt_aligned_quad q;
 		//stbtt_GetPackedQuad(packed_char, 512, 512, c-32, &xx, &yy, &q, 0);
-		get_packed_quad(c-32, &xx, &yy, &q, 1);
-		batch->quad
-		(
+		get_packed_quad(c - 32, &xx, &yy, &q, 1);
+		batch->quad(
 			texture,
 			Vertex3{{q.x0, q.y0, 0.0f}, color, {q.s0, q.t0}},
 			Vertex3{{q.x1, q.y0, 0.0f}, color, {q.s1, q.t0}},
@@ -118,12 +123,14 @@ struct TextPrinter
 };
 
 
-template<class> inline constexpr bool always_false_v = false;
+template<class>
+constexpr bool inline always_false_v = false;
 
 struct FontImpl
 {
- 	// ASCII 32..126 is 95 glyphs
-	stbtt_packedchar packed_char[96]; stbtt_bakedchar cdata[96];
+	// ASCII 32..126 is 95 glyphs
+	stbtt_packedchar packed_char[96];
+	stbtt_bakedchar cdata[96];
 	std::unique_ptr<Texture> texture;
 	float original_height;
 	int image_width;
@@ -131,7 +138,9 @@ struct FontImpl
 
 	void imgui()
 	{
-		ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(texture->id)), ImVec2{300.0f, 300.0f});
+		ImGui::Image(
+			reinterpret_cast<void*>(static_cast<intptr_t>(texture->id)), ImVec2{300.0f, 300.0f}
+		);
 	}
 
 	bool init(const unsigned char* ttf_buffer, float text_height)
@@ -147,14 +156,23 @@ struct FontImpl
 
 		{
 			stbtt_pack_context context;
-			const auto begin_status = stbtt_PackBegin(&context, alpha_only_pixels.data(), texture_width, texture_height, 0, 0, nullptr);
-			if (0 == begin_status) { return false; }
-			
+			const auto begin_status = stbtt_PackBegin(
+				&context, alpha_only_pixels.data(), texture_width, texture_height, 0, 0, nullptr
+			);
+			if (0 == begin_status)
+			{
+				return false;
+			}
+
 			stbtt_PackSetSkipMissingCodepoints(&context, skip);
-			const auto packed_status = stbtt_PackFontRange(&context, ttf_buffer, 0, text_height, 32, 95, packed_char);
+			const auto packed_status
+				= stbtt_PackFontRange(&context, ttf_buffer, 0, text_height, 32, 95, packed_char);
 			stbtt_PackEnd(&context);
 
-			if(packed_status != 0) { return false; }
+			if (packed_status != 0)
+			{
+				return false;
+			}
 		}
 
 		std::vector<unsigned char> rgba_pixels;
@@ -172,7 +190,14 @@ struct FontImpl
 			}
 		}
 
-		this->texture = std::make_unique<Texture>(rgba_pixels.data(), texture_width, texture_height, TextureEdge::clamp, TextureRenderStyle::pixel, Transparency::include);
+		this->texture = std::make_unique<Texture>(
+			rgba_pixels.data(),
+			texture_width,
+			texture_height,
+			TextureEdge::clamp,
+			TextureRenderStyle::pixel,
+			Transparency::include
+		);
 		this->original_height = text_height;
 		this->image_width = texture_width;
 		this->image_height = texture_height;
@@ -180,45 +205,41 @@ struct FontImpl
 		return true;
 	}
 
-	void print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text)
+	void print(
+		SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text
+	)
 	{
 		auto color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 		const float scale = height / original_height;
 
-		auto printer = TextPrinter
-		{
-			x, y,
-			scale,
-			texture.get(),
-			batch,
-			packed_char,
-			image_width,
-			image_height
+		auto printer = TextPrinter{
+			x, y, scale, texture.get(), batch, packed_char, image_width, image_height
 		};
 
-		for(auto c: text)
+		for (auto c: text)
 		{
-			std::visit([&printer, &color](auto&& arg)
-			{
-				using T = std::decay_t<decltype(arg)>;
-				if constexpr (std::is_same_v<T, glm::vec4>)
+			std::visit(
+				[&printer, &color](auto&& arg)
 				{
-					color = arg;
-				}
-				else if constexpr (std::is_same_v<T, std::string>)
-				{
-					printer.print_string(color, arg);
-				}
-				else 
-				{
-					static_assert(always_false_v<T>, "non-exhaustive visitor!");
-				}
-			}, c);
+					using T = std::decay_t<decltype(arg)>;
+					if constexpr (std::is_same_v<T, glm::vec4>)
+					{
+						color = arg;
+					}
+					else if constexpr (std::is_same_v<T, std::string>)
+					{
+						printer.print_string(color, arg);
+					}
+					else
+					{
+						static_assert(always_false_v<T>, "non-exhaustive visitor!");
+					}
+				},
+				c
+			);
 		}
 	}
 };
-
-
 
 Font::Font(const unsigned char* ttf_buffer, float text_height)
 	: impl(std::make_unique<FontImpl>())
@@ -228,7 +249,9 @@ Font::Font(const unsigned char* ttf_buffer, float text_height)
 
 Font::~Font() = default;
 
-void Font::print(SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text)
+void Font::print(
+	SpriteBatch* batch, float height, float x, float y, const std::vector<TextCommand>& text
+)
 {
 	impl->print(batch, height, x, y, text);
 }
@@ -238,4 +261,4 @@ void Font::imgui()
 	impl->imgui();
 }
 
-}
+}  //  namespace render

@@ -13,11 +13,12 @@ std::string get_physfs_error()
 	return PHYSFS_getErrorByCode(code);
 }
 
-std::vector<std::string> physfs_files_in_dir(const std::string &dir)
+std::vector<std::string> physfs_files_in_dir(const std::string& dir)
 {
-	constexpr const auto callback = [](void *data, const char *origdir, const char *fname) -> PHYSFS_EnumerateCallbackResult
+	const constexpr auto callback
+		= [](void* data, const char* origdir, const char* fname) -> PHYSFS_EnumerateCallbackResult
 	{
-		auto *ret = static_cast<std::vector<std::string> *>(data);
+		auto* ret = static_cast<std::vector<std::string>*>(data);
 		ret->emplace_back(std::string(origdir) + fname);
 		return PHYSFS_ENUM_OK;
 	};
@@ -33,9 +34,9 @@ std::vector<std::string> physfs_files_in_dir(const std::string &dir)
 	return r;
 }
 
-std::optional<std::vector<char>> read_file_to_bytes_or_none(const std::string &path)
+std::optional<std::vector<char>> read_file_to_bytes_or_none(const std::string& path)
 {
-	auto *file = PHYSFS_openRead(path.c_str());
+	auto* file = PHYSFS_openRead(path.c_str());
 	if (file == nullptr)
 	{
 		return std::nullopt;
@@ -61,13 +62,13 @@ std::optional<std::vector<char>> read_file_to_bytes_or_none(const std::string &p
 	return ret;
 }
 
-Exception physfs_exception(const std::string &message)
+Exception physfs_exception(const std::string& message)
 {
 	const std::string error = get_physfs_error();
 	return Exception{{message + error}};
 }
 
-Exception missing_file_exception(const std::string &path)
+Exception missing_file_exception(const std::string& path)
 {
 	// todo(Gustav): split path and find files in dir
 	return physfs_exception("unable to open file")
@@ -75,7 +76,7 @@ Exception missing_file_exception(const std::string &path)
 		.append(physfs_files_in_dir(get_dir_from_file(path)));
 }
 
-std::vector<char> read_file_to_bytes(const std::string &path)
+std::vector<char> read_file_to_bytes(const std::string& path)
 {
 	if (auto ret = read_file_to_bytes_or_none(path))
 	{
@@ -87,7 +88,7 @@ std::vector<char> read_file_to_bytes(const std::string &path)
 	}
 }
 
-std::optional<std::string> read_file_to_string_or_none(const std::string &path)
+std::optional<std::string> read_file_to_string_or_none(const std::string& path)
 {
 	if (auto ret = read_file_to_bytes_or_none(path))
 	{
@@ -100,7 +101,7 @@ std::optional<std::string> read_file_to_string_or_none(const std::string &path)
 	}
 }
 
-std::string read_file_to_string(const std::string &path)
+std::string read_file_to_string(const std::string& path)
 {
 	if (auto ret = read_file_to_string_or_none(path))
 	{
@@ -115,7 +116,7 @@ std::string read_file_to_string(const std::string &path)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// Physfs
 
-Physfs::Physfs(const std::string &path)
+Physfs::Physfs(const std::string& path)
 {
 	const auto ok = PHYSFS_init(path.c_str());
 	if (ok == 0)
@@ -134,7 +135,7 @@ Physfs::~Physfs()
 	}
 }
 
-void Physfs::setup(const std::string &root)
+void Physfs::setup(const std::string& root)
 {
 	LOG_INFO("Sugggested root is: {0}", root);
 	PHYSFS_mount(root.c_str(), "/", 1);

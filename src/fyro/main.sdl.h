@@ -16,13 +16,18 @@
 
 enum class MouseButton
 {
-	invalid
-	, unbound  /// No key
-	, left  /// The left mouse button
-	, middle  /// The middle mouse button
-	, right  /// The right mouse button
-	, x1  /// The X2 mouse button
-	, x2  /// The X2 mouse button
+	invalid,
+	unbound	 /// No key
+		,
+	left  /// The left mouse button
+		,
+	middle	/// The middle mouse button
+		,
+	right  /// The right mouse button
+		,
+	x1	/// The X2 mouse button
+		,
+	x2	/// The X2 mouse button
 };
 
 struct Game
@@ -32,17 +37,22 @@ struct Game
 
 	bool run = true;
 
-	virtual void on_render(const render::RenderCommand &rc);
+	virtual void on_render(const render::RenderCommand& rc);
 	virtual void on_imgui();
 	virtual void on_update(float);
 
 	virtual void on_key(char key, bool down);
-	virtual void on_mouse_position(const render::InputCommand &, const glm::ivec2 &position);
-	virtual void on_mouse_button(const render::InputCommand &, MouseButton button, bool down);
+	virtual void on_mouse_position(const render::InputCommand&, const glm::ivec2& position);
+	virtual void on_mouse_button(const render::InputCommand&, MouseButton button, bool down);
 	virtual void on_mouse_wheel(int scroll);
 
-	virtual void on_added_controller(SDL_GameController *controller);
+	virtual void on_added_controller(SDL_GameController* controller);
 	virtual void on_lost_joystick_instance(int instance_id);
 };
 
-int run_game(const std::string &title, const glm::ivec2 &size, bool call_imgui, std::function<std::shared_ptr<Game>()> make_game);
+int run_game(
+	const std::string& title,
+	const glm::ivec2& size,
+	bool call_imgui,
+	std::function<std::shared_ptr<Game>()> make_game
+);

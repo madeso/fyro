@@ -2,7 +2,6 @@
 
 #include "fyro/rect.h"
 
-
 namespace render
 {
 
@@ -32,8 +31,11 @@ struct RenderLayer3 : Layer
 	RenderLayer3(Layer&& l);
 };
 
-enum class ViewportStyle { black_bars, extended};
-
+enum class ViewportStyle
+{
+	black_bars,
+	extended
+};
 
 struct LayoutData
 {
@@ -41,7 +43,6 @@ struct LayoutData
 	float requested_width;
 	float requested_height;
 };
-
 
 struct InputCommand
 {
@@ -60,7 +61,6 @@ struct RenderCommand
 	void set_camera(const glm::mat4& camera) const;
 };
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
 
@@ -72,4 +72,4 @@ RenderLayer2 with_layer2(const RenderCommand& rc, const LayoutData& ld);
 RenderLayer3 with_layer3(const RenderCommand& rc, const LayoutData& ld);
 Layer with_layer(const InputCommand& rc, const LayoutData& ld);
 
-}
+}  //  namespace render

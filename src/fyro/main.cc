@@ -23,7 +23,6 @@
 #include "fyro/dependencies/dependency_imgui.h"
 #include "tmxlite/Map.hpp"
 
-
 int to_int(lox::Ti ti)
 {
 	return static_cast<int>(ti);
@@ -39,11 +38,16 @@ struct PrintLoxError : lox::PrintHandler
 
 struct RenderData
 {
-	const render::RenderCommand &rc;
+	const render::RenderCommand& rc;
 	std::optional<render::RenderLayer2> layer;
 	glm::vec2 focus;
 
-	explicit RenderData(const render::RenderCommand &rr) : rc(rr), focus(0, 0) {}
+	explicit RenderData(const render::RenderCommand& rr)
+		: rc(rr)
+		, focus(0, 0)
+	{
+	}
+
 	~RenderData()
 	{
 		if (layer)
@@ -68,19 +72,20 @@ struct State
 	State() = default;
 	virtual ~State() = default;
 	virtual void update(float) = 0;
-	virtual void render(const render::RenderCommand &rc) = 0;
+	virtual void render(const render::RenderCommand& rc) = 0;
 };
 
 struct ScriptState : State
 {
 	std::shared_ptr<lox::Instance> instance;
-	lox::Lox *lox;
+	lox::Lox* lox;
 
 	std::shared_ptr<lox::Callable> on_update;
 	std::shared_ptr<lox::Callable> on_render;
 
-	ScriptState(std::shared_ptr<lox::Instance> in, lox::Lox *lo)
-		: instance(in), lox(lo)
+	ScriptState(std::shared_ptr<lox::Instance> in, lox::Lox* lo)
+		: instance(in)
+		, lox(lo)
 	{
 		on_update = instance->get_bound_method_or_null("update");
 		on_render = instance->get_bound_method_or_null("render");
@@ -94,7 +99,7 @@ struct ScriptState : State
 		}
 	}
 
-	void render(const render::RenderCommand &rc) override
+	void render(const render::RenderCommand& rc) override
 	{
 		if (on_render)
 		{
@@ -135,32 +140,35 @@ struct ScriptFont
 {
 	std::shared_ptr<render::Font> font;
 
-	void setup(const std::string &path, float height)
+	void setup(const std::string& path, float height)
 	{
 		auto bytes = read_file_to_bytes(path);
-		font = std::make_shared<render::Font>(reinterpret_cast<const unsigned char *>(bytes.data()), height);
+		font = std::make_shared<render::Font>(
+			reinterpret_cast<const unsigned char*>(bytes.data()), height
+		);
 	}
 };
 
-std::shared_ptr<render::Texture>
-load_texture(const std::string &path)
+std::shared_ptr<render::Texture> load_texture(const std::string& path)
 {
 	const auto bytes = read_file_to_bytes(path);
-	return std::make_shared<render::Texture>(
-		render::load_image_from_bytes(
-			reinterpret_cast<const unsigned char *>(bytes.data()),
-			static_cast<int>(bytes.size()),
-			render::TextureEdge::repeat,
-			render::TextureRenderStyle::pixel,
-			render::Transparency::include));
+	return std::make_shared<render::Texture>(render::load_image_from_bytes(
+		reinterpret_cast<const unsigned char*>(bytes.data()),
+		static_cast<int>(bytes.size()),
+		render::TextureEdge::repeat,
+		render::TextureRenderStyle::pixel,
+		render::Transparency::include
+	));
 }
 
 struct Sprite
 {
 	Sprite()
-		: screen(1.0f, 1.0f), uv(1.0f, 1.0f)
+		: screen(1.0f, 1.0f)
+		, uv(1.0f, 1.0f)
 	{
 	}
+
 	std::shared_ptr<render::Texture> texture;
 	Rectf screen;
 	Rectf uv;
@@ -173,9 +181,7 @@ struct SpriteAnimation
 	int current_index = 0;
 	int total_sprites = 0;
 
-	void setup(
-		float a_speed,
-		int a_total_sprites)
+	void setup(float a_speed, int a_total_sprites)
 	{
 		speed = a_speed;
 		total_sprites = a_total_sprites;
@@ -206,7 +212,7 @@ struct SpriteAnimation
 struct ScriptSprite
 {
 	std::vector<Sprite> sprites;
-	std::shared_ptr<SpriteAnimation> animation; // may be shared between sprites
+	std::shared_ptr<SpriteAnimation> animation;	 // may be shared between sprites
 
 	ScriptSprite()
 		: animation(std::make_shared<SpriteAnimation>())
@@ -248,7 +254,7 @@ struct ScriptActor
 		}
 	}
 
-	bool is_riding_solid(fyro::Solid *)
+	bool is_riding_solid(fyro::Solid*)
 	{
 		// todo(Gustav): implement this
 		return false;
@@ -300,7 +306,7 @@ struct ScriptActorImpl : fyro::Actor
 {
 	std::shared_ptr<ScriptActor> dispatcher;
 
-	bool is_riding_solid(fyro::Solid *solid) override
+	bool is_riding_solid(fyro::Solid* solid) override
 	{
 		if (dispatcher)
 		{
@@ -380,8 +386,13 @@ struct ScriptLevelData
 
 struct FixedSolid : fyro::Solid
 {
-	void update(float) override {}
-	void render(std::shared_ptr<lox::Object>) override {}
+	void update(float) override
+	{
+	}
+
+	void render(std::shared_ptr<lox::Object>) override
+	{
+	}
 };
 
 struct ScriptLevel
@@ -393,7 +404,7 @@ struct ScriptLevel
 
 	std::shared_ptr<ScriptLevelData> data;
 
-	void load_tmx(const std::string &path)
+	void load_tmx(const std::string& path)
 	{
 		auto source = read_file_to_string(path);
 		tmx::Map map;
@@ -404,17 +415,15 @@ struct ScriptLevel
 		}
 		data->tiles.load_from_map(map);
 
-		for (const auto &rect : data->tiles.get_collisions())
+		for (const auto& rect: data->tiles.get_collisions())
 		{
 			auto solid = std::make_shared<FixedSolid>();
 			solid->level = &data->level;
 
-			solid->position = glm::ivec2{
-				static_cast<int>(rect.left),
-				static_cast<int>(rect.bottom)};
-			solid->size = Recti{
-				static_cast<int>(rect.get_width()),
-				static_cast<int>(rect.get_height())};
+			solid->position
+				= glm::ivec2{static_cast<int>(rect.left), static_cast<int>(rect.bottom)};
+			solid->size
+				= Recti{static_cast<int>(rect.get_width()), static_cast<int>(rect.get_height())};
 
 			data->level.solids.emplace_back(solid);
 		}
@@ -449,16 +458,15 @@ struct ExampleGame : public Game
 	std::unique_ptr<State> next_state;
 	std::unique_ptr<State> state;
 
-	std::vector<std::shared_ptr<render::Font>> loaded_fonts; // todo(Gustav): replace with cache
+	std::vector<std::shared_ptr<render::Font>> loaded_fonts;  // todo(Gustav): replace with cache
 	Cache<std::string, render::Texture> texture_cache;
 
 	std::vector<std::shared_ptr<SpriteAnimation>> animations;
 
 	ExampleGame()
-		: lox(std::make_unique<PrintLoxError>(), [](const std::string &str)
-			  { LOG_INFO("> {0}", str); }),
-		  texture_cache([](const std::string &path)
-						{ return load_texture(path); })
+		: lox(std::make_unique<PrintLoxError>(),
+			  [](const std::string& str) { LOG_INFO("> {0}", str); })
+		, texture_cache([](const std::string& path) { return load_texture(path); })
 	{
 		// todo(Gustav): read/write to json and provide ui for adding new mappings
 		keyboards.mappings.emplace_back(create_default_mapping_for_player1());
@@ -468,7 +476,7 @@ struct ExampleGame : public Game
 
 	void on_imgui() override
 	{
-		for (auto &f : loaded_fonts)
+		for (auto& f: loaded_fonts)
 		{
 			f->imgui();
 		}
@@ -487,168 +495,206 @@ struct ExampleGame : public Game
 	void bind_named_colors()
 	{
 		auto rgb = lox.in_package("fyro.rgb");
-		rgb->add_native_getter("white", [&]()
-							   { return lox.make_native(Rgb{255, 255, 255}); });
-		rgb->add_native_getter("light_gray", [&]()
-							   { return lox.make_native(Rgb{160, 160, 160}); });
-		rgb->add_native_getter("gray", [&]()
-							   { return lox.make_native(Rgb{127, 127, 127}); });
-		rgb->add_native_getter("dark_gray", [&]()
-							   { return lox.make_native(Rgb{87, 87, 87}); });
-		rgb->add_native_getter("black", [&]()
-							   { return lox.make_native(Rgb{0, 0, 0}); });
-		rgb->add_native_getter("red", [&]()
-							   { return lox.make_native(Rgb{173, 35, 35}); });
-		rgb->add_native_getter("pure_red", [&]()
-							   { return lox.make_native(Rgb{255, 0, 0}); });
-		rgb->add_native_getter("blue", [&]()
-							   { return lox.make_native(Rgb{42, 75, 215}); });
-		rgb->add_native_getter("pure_blue", [&]()
-							   { return lox.make_native(Rgb{0, 0, 255}); });
-		rgb->add_native_getter("light_blue", [&]()
-							   { return lox.make_native(Rgb{157, 175, 255}); });
-		rgb->add_native_getter("normal_blue", [&]()
-							   { return lox.make_native(Rgb{127, 127, 255}); });
-		rgb->add_native_getter("cornflower_blue", [&]()
-							   { return lox.make_native(Rgb{100, 149, 237}); });
-		rgb->add_native_getter("green", [&]()
-							   { return lox.make_native(Rgb{29, 105, 20}); });
-		rgb->add_native_getter("pure_green", [&]()
-							   { return lox.make_native(Rgb{0, 255, 0}); });
-		rgb->add_native_getter("light_green", [&]()
-							   { return lox.make_native(Rgb{129, 197, 122}); });
-		rgb->add_native_getter("yellow", [&]()
-							   { return lox.make_native(Rgb{255, 238, 51}); });
-		rgb->add_native_getter("pure_yellow", [&]()
-							   { return lox.make_native(Rgb{255, 255, 0}); });
-		rgb->add_native_getter("orange", [&]()
-							   { return lox.make_native(Rgb{255, 146, 51}); });
-		rgb->add_native_getter("pure_orange", [&]()
-							   { return lox.make_native(Rgb{255, 127, 0}); });
-		rgb->add_native_getter("brown", [&]()
-							   { return lox.make_native(Rgb{129, 74, 25}); });
-		rgb->add_native_getter("pure_brown", [&]()
-							   { return lox.make_native(Rgb{250, 75, 0}); });
-		rgb->add_native_getter("purple", [&]()
-							   { return lox.make_native(Rgb{129, 38, 192}); });
-		rgb->add_native_getter("pure_purple", [&]()
-							   { return lox.make_native(Rgb{128, 0, 128}); });
-		rgb->add_native_getter("pink", [&]()
-							   { return lox.make_native(Rgb{255, 205, 243}); });
-		rgb->add_native_getter("pure_pink", [&]()
-							   { return lox.make_native(Rgb{255, 192, 203}); });
-		rgb->add_native_getter("pure_beige", [&]()
-							   { return lox.make_native(Rgb{245, 245, 220}); });
-		rgb->add_native_getter("tan", [&]()
-							   { return lox.make_native(Rgb{233, 222, 187}); });
-		rgb->add_native_getter("pure_tan", [&]()
-							   { return lox.make_native(Rgb{210, 180, 140}); });
-		rgb->add_native_getter("cyan", [&]()
-							   { return lox.make_native(Rgb{41, 208, 208}); });
-		rgb->add_native_getter("pure_cyan", [&]()
-							   { return lox.make_native(Rgb{0, 255, 255}); });
+		rgb->add_native_getter("white", [&]() { return lox.make_native(Rgb{255, 255, 255}); });
+		rgb->add_native_getter("light_gray", [&]() { return lox.make_native(Rgb{160, 160, 160}); });
+		rgb->add_native_getter("gray", [&]() { return lox.make_native(Rgb{127, 127, 127}); });
+		rgb->add_native_getter("dark_gray", [&]() { return lox.make_native(Rgb{87, 87, 87}); });
+		rgb->add_native_getter("black", [&]() { return lox.make_native(Rgb{0, 0, 0}); });
+		rgb->add_native_getter("red", [&]() { return lox.make_native(Rgb{173, 35, 35}); });
+		rgb->add_native_getter("pure_red", [&]() { return lox.make_native(Rgb{255, 0, 0}); });
+		rgb->add_native_getter("blue", [&]() { return lox.make_native(Rgb{42, 75, 215}); });
+		rgb->add_native_getter("pure_blue", [&]() { return lox.make_native(Rgb{0, 0, 255}); });
+		rgb->add_native_getter("light_blue", [&]() { return lox.make_native(Rgb{157, 175, 255}); });
+		rgb->add_native_getter(
+			"normal_blue", [&]() { return lox.make_native(Rgb{127, 127, 255}); }
+		);
+		rgb->add_native_getter(
+			"cornflower_blue", [&]() { return lox.make_native(Rgb{100, 149, 237}); }
+		);
+		rgb->add_native_getter("green", [&]() { return lox.make_native(Rgb{29, 105, 20}); });
+		rgb->add_native_getter("pure_green", [&]() { return lox.make_native(Rgb{0, 255, 0}); });
+		rgb->add_native_getter(
+			"light_green", [&]() { return lox.make_native(Rgb{129, 197, 122}); }
+		);
+		rgb->add_native_getter("yellow", [&]() { return lox.make_native(Rgb{255, 238, 51}); });
+		rgb->add_native_getter("pure_yellow", [&]() { return lox.make_native(Rgb{255, 255, 0}); });
+		rgb->add_native_getter("orange", [&]() { return lox.make_native(Rgb{255, 146, 51}); });
+		rgb->add_native_getter("pure_orange", [&]() { return lox.make_native(Rgb{255, 127, 0}); });
+		rgb->add_native_getter("brown", [&]() { return lox.make_native(Rgb{129, 74, 25}); });
+		rgb->add_native_getter("pure_brown", [&]() { return lox.make_native(Rgb{250, 75, 0}); });
+		rgb->add_native_getter("purple", [&]() { return lox.make_native(Rgb{129, 38, 192}); });
+		rgb->add_native_getter("pure_purple", [&]() { return lox.make_native(Rgb{128, 0, 128}); });
+		rgb->add_native_getter("pink", [&]() { return lox.make_native(Rgb{255, 205, 243}); });
+		rgb->add_native_getter("pure_pink", [&]() { return lox.make_native(Rgb{255, 192, 203}); });
+		rgb->add_native_getter("pure_beige", [&]() { return lox.make_native(Rgb{245, 245, 220}); });
+		rgb->add_native_getter("tan", [&]() { return lox.make_native(Rgb{233, 222, 187}); });
+		rgb->add_native_getter("pure_tan", [&]() { return lox.make_native(Rgb{210, 180, 140}); });
+		rgb->add_native_getter("cyan", [&]() { return lox.make_native(Rgb{41, 208, 208}); });
+		rgb->add_native_getter("pure_cyan", [&]() { return lox.make_native(Rgb{0, 255, 255}); });
 	}
 
 	void bind_collision()
 	{
 		auto fyro = lox.in_package("fyro");
 
-		lox.in_global_scope()->define_native_class<ScriptActorBase>("Actor").add_function("move_x", [](ScriptActorBase &x, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-																						  {
-				auto dist = static_cast<float>(ah.require_float());
-				ah.complete();
-				auto r = x.impl->move_x(dist, fyro::no_collision_reaction);
-				return lox::make_bool(r); })
-			.add_function("move_y", [](ScriptActorBase &x, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto dist = static_cast<float>(ah.require_float());
-				ah.complete();
-				auto r = x.impl->move_y(dist, fyro::no_collision_reaction);
-				return lox::make_bool(r); })
-			.add_property<lox::Ti>("x", [](ScriptActorBase &x) -> lox::Ti
-								   { return x.impl->position.x; }, [](ScriptActorBase &x, lox::Ti v)
-								   { x.impl->position.x = to_int(v); })
-			.add_property<lox::Ti>("y", [](ScriptActorBase &x) -> lox::Ti
-								   { return x.impl->position.y; }, [](ScriptActorBase &x, lox::Ti v)
-								   { x.impl->position.y = to_int(v); })
-			.add_getter<lox::Ti>("width", [](ScriptActorBase &x) -> lox::Ti
-								 { return x.impl->size.get_width(); })
-			.add_getter<lox::Ti>("height", [](ScriptActorBase &x) -> lox::Ti
-								 { return x.impl->size.get_height(); })
-			.add_function("set_size", [](ScriptActorBase &x, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto width = to_int(ah.require_int());
-				auto height = to_int(ah.require_int());
-				ah.complete();
-				x.impl->size = Recti{width, height};
-				return lox::make_nil(); })
-			.add_function("set_lrud", [](ScriptActorBase &x, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto left = to_int(ah.require_int());
-				auto right = to_int(ah.require_int());
-				auto up = to_int(ah.require_int());
-				auto down = to_int(ah.require_int());
-				ah.complete();
-				x.impl->size = Recti{left, down, right, up};
-				return lox::make_nil(); });
+		lox.in_global_scope()
+			->define_native_class<ScriptActorBase>("Actor")
+			.add_function(
+				"move_x",
+				[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto dist = static_cast<float>(ah.require_float());
+					ah.complete();
+					auto r = x.impl->move_x(dist, fyro::no_collision_reaction);
+					return lox::make_bool(r);
+				}
+			)
+			.add_function(
+				"move_y",
+				[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto dist = static_cast<float>(ah.require_float());
+					ah.complete();
+					auto r = x.impl->move_y(dist, fyro::no_collision_reaction);
+					return lox::make_bool(r);
+				}
+			)
+			.add_property<lox::Ti>(
+				"x",
+				[](ScriptActorBase& x) -> lox::Ti { return x.impl->position.x; },
+				[](ScriptActorBase& x, lox::Ti v) { x.impl->position.x = to_int(v); }
+			)
+			.add_property<lox::Ti>(
+				"y",
+				[](ScriptActorBase& x) -> lox::Ti { return x.impl->position.y; },
+				[](ScriptActorBase& x, lox::Ti v) { x.impl->position.y = to_int(v); }
+			)
+			.add_getter<lox::Ti>(
+				"width", [](ScriptActorBase& x) -> lox::Ti { return x.impl->size.get_width(); }
+			)
+			.add_getter<lox::Ti>(
+				"height", [](ScriptActorBase& x) -> lox::Ti { return x.impl->size.get_height(); }
+			)
+			.add_function(
+				"set_size",
+				[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto width = to_int(ah.require_int());
+					auto height = to_int(ah.require_int());
+					ah.complete();
+					x.impl->size = Recti{width, height};
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"set_lrud",
+				[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto left = to_int(ah.require_int());
+					auto right = to_int(ah.require_int());
+					auto up = to_int(ah.require_int());
+					auto down = to_int(ah.require_int());
+					ah.complete();
+					x.impl->size = Recti{left, down, right, up};
+					return lox::make_nil();
+				}
+			);
 
-		lox.in_global_scope()->define_native_class<ScriptSolidBase>("Solid").add_function("move", [](ScriptSolidBase &s, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-																						  {
-				auto dx = static_cast<float>(ah.require_float());
-				auto dy = static_cast<float>(ah.require_float());
-				ah.complete();
-				s.impl->Move(dx, dy);
-				return lox::make_nil(); })
-			.add_property<lox::Ti>("x", [](ScriptSolidBase &x) -> lox::Ti
-								   { return x.impl->position.x; }, [](ScriptSolidBase &x, lox::Ti v)
-								   { x.impl->position.x = to_int(v); })
-			.add_property<lox::Ti>("y", [](ScriptSolidBase &x) -> lox::Ti
-								   { return x.impl->position.y; }, [](ScriptSolidBase &x, lox::Ti v)
-								   { x.impl->position.y = to_int(v); })
-			.add_getter<lox::Ti>("width", [](ScriptSolidBase &x) -> lox::Ti
-								 { return x.impl->size.get_width(); })
-			.add_getter<lox::Ti>("height", [](ScriptSolidBase &x) -> lox::Ti
-								 { return x.impl->size.get_height(); })
-			.add_function("set_size", [](ScriptSolidBase &x, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto width = to_int(ah.require_int());
-				auto height = to_int(ah.require_int());
-				ah.complete();
-				x.impl->size = Recti{width, height};
-				return lox::make_nil(); });
+		lox.in_global_scope()
+			->define_native_class<ScriptSolidBase>("Solid")
+			.add_function(
+				"move",
+				[](ScriptSolidBase& s, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto dx = static_cast<float>(ah.require_float());
+					auto dy = static_cast<float>(ah.require_float());
+					ah.complete();
+					s.impl->Move(dx, dy);
+					return lox::make_nil();
+				}
+			)
+			.add_property<lox::Ti>(
+				"x",
+				[](ScriptSolidBase& x) -> lox::Ti { return x.impl->position.x; },
+				[](ScriptSolidBase& x, lox::Ti v) { x.impl->position.x = to_int(v); }
+			)
+			.add_property<lox::Ti>(
+				"y",
+				[](ScriptSolidBase& x) -> lox::Ti { return x.impl->position.y; },
+				[](ScriptSolidBase& x, lox::Ti v) { x.impl->position.y = to_int(v); }
+			)
+			.add_getter<lox::Ti>(
+				"width", [](ScriptSolidBase& x) -> lox::Ti { return x.impl->size.get_width(); }
+			)
+			.add_getter<lox::Ti>(
+				"height", [](ScriptSolidBase& x) -> lox::Ti { return x.impl->size.get_height(); }
+			)
+			.add_function(
+				"set_size",
+				[](ScriptSolidBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto width = to_int(ah.require_int());
+					auto height = to_int(ah.require_int());
+					ah.complete();
+					x.impl->size = Recti{width, height};
+					return lox::make_nil();
+				}
+			);
 
 		fyro->define_native_class<ScriptLevel>("Level")
-			.add_function("add", [](ScriptLevel &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto inst = ah.require_instance();
-				ah.complete();
-				r.add_actor(inst);
-				return lox::make_nil(); })
-			.add_function("load_tmx", [](ScriptLevel &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto path = ah.require_string();
-				ah.complete();
-				r.load_tmx(path);
-				return lox::make_nil(); })
-			.add_function("add_solid", [](ScriptLevel &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto inst = ah.require_instance();
-				ah.complete();
-				r.add_solid(inst);
-				return lox::make_nil(); })
-			.add_function("update", [](ScriptLevel &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto dt = static_cast<float>(ah.require_float());
-				ah.complete();
-				r.data->level.update(dt);
-				return lox::make_nil(); })
-			.add_function("render", [](ScriptLevel &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto rend = ah.require_native<RenderArg>();
-				ah.complete();
-				r.data->tiles.render(*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace);
-				r.data->level.render(rend.instance);
-				return lox::make_nil(); });
+			.add_function(
+				"add",
+				[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto inst = ah.require_instance();
+					ah.complete();
+					r.add_actor(inst);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"load_tmx",
+				[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto path = ah.require_string();
+					ah.complete();
+					r.load_tmx(path);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"add_solid",
+				[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto inst = ah.require_instance();
+					ah.complete();
+					r.add_solid(inst);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"update",
+				[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto dt = static_cast<float>(ah.require_float());
+					ah.complete();
+					r.data->level.update(dt);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"render",
+				[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto rend = ah.require_native<RenderArg>();
+					ah.complete();
+					r.data->tiles.render(
+						*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace
+					);
+					r.data->level.render(rend.instance);
+					return lox::make_nil();
+				}
+			);
 	}
 
 	void bind_functions()
@@ -657,404 +703,588 @@ struct ExampleGame : public Game
 		bind_collision();
 		auto fyro = lox.in_package("fyro");
 
-		fyro->define_native_function("set_state", [this](lox::Callable *, lox::ArgumentHelper &arguments)
-									 {
-			auto instance = arguments.require_instance();
-			arguments.complete();
-			next_state = std::make_unique<ScriptState>(instance, &lox);
-			return lox::make_nil(); });
+		fyro->define_native_function(
+			"set_state",
+			[this](lox::Callable*, lox::ArgumentHelper& arguments)
+			{
+				auto instance = arguments.require_instance();
+				arguments.complete();
+				next_state = std::make_unique<ScriptState>(instance, &lox);
+				return lox::make_nil();
+			}
+		);
 
-		fyro->define_native_function("get_input", [this](lox::Callable *, lox::ArgumentHelper &arguments)
-									 {
-			arguments.complete();
-			auto frame = input.capture_player();
-			return lox.make_native<ScriptPlayer>(ScriptPlayer{frame}); });
+		fyro->define_native_function(
+			"get_input",
+			[this](lox::Callable*, lox::ArgumentHelper& arguments)
+			{
+				arguments.complete();
+				auto frame = input.capture_player();
+				return lox.make_native<ScriptPlayer>(ScriptPlayer{frame});
+			}
+		);
 
-		fyro->define_native_class<Rgb>("Rgb", [](lox::ArgumentHelper &ah) -> Rgb
-									   {
-			const auto r = static_cast<float>(ah.require_float());
-			const auto g = static_cast<float>(ah.require_float());
-			const auto b = static_cast<float>(ah.require_float());
-			ah.complete();
-			return Rgb{r, g, b}; });
+		fyro->define_native_class<Rgb>(
+			"Rgb",
+			[](lox::ArgumentHelper& ah) -> Rgb
+			{
+				const auto r = static_cast<float>(ah.require_float());
+				const auto g = static_cast<float>(ah.require_float());
+				const auto b = static_cast<float>(ah.require_float());
+				ah.complete();
+				return Rgb{r, g, b};
+			}
+		);
 
-		fyro->define_native_class<glm::ivec2>("vec2i", [](lox::ArgumentHelper &ah) -> glm::ivec2
-											  {
-			const auto x = ah.require_int();
-			const auto y = ah.require_int();
-			ah.complete();
-			return glm::ivec2{x, y}; });
+		fyro->define_native_class<glm::ivec2>(
+			"vec2i",
+			[](lox::ArgumentHelper& ah) -> glm::ivec2
+			{
+				const auto x = ah.require_int();
+				const auto y = ah.require_int();
+				ah.complete();
+				return glm::ivec2{x, y};
+			}
+		);
 
 		// todo(Gustav): validate argumends and raise script error on invalid
 		fyro->define_native_class<RenderArg>("RenderCommand")
-			.add_function("windowbox", [](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
-				ah.complete();
-
-				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
-				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
-				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-
-				r.data->layer = render::with_layer2(r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height});
-				return lox::make_nil(); })
-			.add_function("look_at", [](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto focusx = static_cast<float>(ah.require_float());
-				auto focusy = static_cast<float>(ah.require_float());
-				auto level = ah.require_native<ScriptLevel>();
-				ah.complete();
-
-				if(r.data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-
-				const auto& aabb = r.data->layer->viewport_aabb_in_worldspace;
-				const auto center_screen = glm::vec3{0.5f*aabb.get_width(), 0.5f*aabb.get_height(), 0};
-
-				if(auto bounds = level->data->tiles.get_bounds(); bounds)
+			.add_function(
+				"windowbox",
+				[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 				{
-					focusx = std::max(focusx, bounds->left + center_screen.x);
-					focusx = std::min(focusx, bounds->right - center_screen.x);
+					const auto width = static_cast<float>(ah.require_float());
+					const auto height = static_cast<float>(ah.require_float());
+					ah.complete();
 
-					focusy = std::min(focusy, bounds->top - center_screen.y);
-					focusy = std::max(focusy, bounds->bottom + center_screen.y);
+					if (width <= 0.0f)
+					{
+						lox::raise_error("width must be positive");
+					}
+					if (height <= 0.0f)
+					{
+						lox::raise_error("height must be positive");
+					}
+					if (r.data == nullptr)
+					{
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
+					}
+
+					r.data->layer = render::with_layer2(
+						r.data->rc,
+						render::LayoutData{render::ViewportStyle::black_bars, width, height}
+					);
+					return lox::make_nil();
 				}
-				
-				const auto translation = glm::vec3{-focusx, -focusy, 0} + center_screen;
-				const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
-				r.data->rc.set_camera(camera_matrix);
-				r.data->focus = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
-				return lox::make_nil(); })
-			.add_function("clear", [](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto color = ah.require_native<Rgb>();
-				ah.complete();
-				if(color == nullptr) { return nullptr;}
-
-				auto data = r.data;
-				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
-				
-				render::RenderLayer2& layer = *data->layer;
-				layer.batch->quadf({}, layer.viewport_aabb_in_worldspace.translate(data->focus), {}, false, {color->r, color->g, color->b, 1.0f});
-				return lox::make_nil(); })
-			.add_function("rect", [](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
-
-				ah.complete();
-				if(color == nullptr) { return nullptr; }
-
-				if(width <= 0.0f) { lox::raise_error("width must be positive"); }
-				if(height <= 0.0f) { lox::raise_error("height must be positive"); }
-
-				auto data = r.data;
-				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
-				
-				render::RenderLayer2& layer = *data->layer;
-				layer.batch->quadf({}, Rect{width, height}.translate(x, y), {}, false, {color->r, color->g, color->b, 1.0f}
-				);
-				return lox::make_nil(); })
-			.add_function("text", [](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto font = ah.require_native<ScriptFont>();
-				const auto height = static_cast<float>(ah.require_float());
-				// auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				//const auto text = ah.require_string();
-				const auto script_commands = ah.require_array();
-
-				ah.complete();
-				if(font == nullptr) { return nullptr; }
-
-				auto data = r.data;
-				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
-				
-				render::RenderLayer2& layer = *data->layer;
-
-				std::vector<render::TextCommand> commands;
-				for(auto& obj: script_commands->values)
+			)
+			.add_function(
+				"look_at",
+				[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 				{
-					if(auto color = lox::as_native<Rgb>(obj); color)
+					auto focusx = static_cast<float>(ah.require_float());
+					auto focusy = static_cast<float>(ah.require_float());
+					auto level = ah.require_native<ScriptLevel>();
+					ah.complete();
+
+					if (r.data == nullptr)
 					{
-						commands.emplace_back(glm::vec4{color->r, color->g, color->b, 1.0f});
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
 					}
-					else
+
+					const auto& aabb = r.data->layer->viewport_aabb_in_worldspace;
+					const auto center_screen
+						= glm::vec3{0.5f * aabb.get_width(), 0.5f * aabb.get_height(), 0};
+
+					if (auto bounds = level->data->tiles.get_bounds(); bounds)
 					{
-						const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
-						commands.emplace_back(str);
+						focusx = std::max(focusx, bounds->left + center_screen.x);
+						focusx = std::min(focusx, bounds->right - center_screen.x);
+
+						focusy = std::min(focusy, bounds->top - center_screen.y);
+						focusy = std::max(focusy, bounds->bottom + center_screen.y);
 					}
-					
+
+					const auto translation = glm::vec3{-focusx, -focusy, 0} + center_screen;
+					const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
+					r.data->rc.set_camera(camera_matrix);
+					r.data->focus = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
+					return lox::make_nil();
 				}
-				font->font->print(layer.batch, height, x, y, commands);
-				
-				return lox::make_nil(); })
-			.add_function("sprite", [this](RenderArg &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				auto texture = ah.require_native<ScriptSprite>();
-				// auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				const auto flip_x = ah.require_bool();
-				/* const auto flip_y =*/ ah.require_bool();
-				ah.complete();
+			)
+			.add_function(
+				"clear",
+				[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto color = ah.require_native<Rgb>();
+					ah.complete();
+					if (color == nullptr)
+					{
+						return nullptr;
+					}
 
-				if(texture == nullptr) { return nullptr; }
+					auto data = r.data;
+					if (data == nullptr)
+					{
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
+					}
+					if (data->layer.has_value() == false)
+					{
+						lox::raise_error("need to setup virtual render area first");
+						return nullptr;
+					}
 
-				auto data = r.data;
-				if(data == nullptr) { lox::raise_error("must be called inside State.render()"); return nullptr; }
-				if(data->layer.has_value() == false) { lox::raise_error("need to setup virtual render area first"); return nullptr; }
-				
-				render::RenderLayer2& layer = *data->layer;
-				animations.emplace_back(texture->animation);
-				const auto animation_index = static_cast<std::size_t>(std::max(0, texture->animation->current_index));
-				Sprite& sprite = texture->sprites[animation_index];
+					render::RenderLayer2& layer = *data->layer;
+					layer.batch->quadf(
+						{},
+						layer.viewport_aabb_in_worldspace.translate(data->focus),
+						{},
+						false,
+						{color->r, color->g, color->b, 1.0f}
+					);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"rect",
+				[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto color = ah.require_native<Rgb>();
+					const auto x = static_cast<float>(ah.require_float());
+					const auto y = static_cast<float>(ah.require_float());
+					const auto width = static_cast<float>(ah.require_float());
+					const auto height = static_cast<float>(ah.require_float());
 
-				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
-				const auto tint = glm::vec4(1.0f);
-				const auto screen = Rectf{sprite.screen}.translate(x, y);
-				layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
-				
-				return lox::make_nil(); });
+					ah.complete();
+					if (color == nullptr)
+					{
+						return nullptr;
+					}
+
+					if (width <= 0.0f)
+					{
+						lox::raise_error("width must be positive");
+					}
+					if (height <= 0.0f)
+					{
+						lox::raise_error("height must be positive");
+					}
+
+					auto data = r.data;
+					if (data == nullptr)
+					{
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
+					}
+					if (data->layer.has_value() == false)
+					{
+						lox::raise_error("need to setup virtual render area first");
+						return nullptr;
+					}
+
+					render::RenderLayer2& layer = *data->layer;
+					layer.batch->quadf(
+						{},
+						Rect{width, height}.translate(x, y),
+						{},
+						false,
+						{color->r, color->g, color->b, 1.0f}
+					);
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"text",
+				[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto font = ah.require_native<ScriptFont>();
+					const auto height = static_cast<float>(ah.require_float());
+					// auto color = ah.require_native<Rgb>();
+					const auto x = static_cast<float>(ah.require_float());
+					const auto y = static_cast<float>(ah.require_float());
+					//const auto text = ah.require_string();
+					const auto script_commands = ah.require_array();
+
+					ah.complete();
+					if (font == nullptr)
+					{
+						return nullptr;
+					}
+
+					auto data = r.data;
+					if (data == nullptr)
+					{
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
+					}
+					if (data->layer.has_value() == false)
+					{
+						lox::raise_error("need to setup virtual render area first");
+						return nullptr;
+					}
+
+					render::RenderLayer2& layer = *data->layer;
+
+					std::vector<render::TextCommand> commands;
+					for (auto& obj: script_commands->values)
+					{
+						if (auto color = lox::as_native<Rgb>(obj); color)
+						{
+							commands.emplace_back(glm::vec4{color->r, color->g, color->b, 1.0f});
+						}
+						else
+						{
+							const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
+							commands.emplace_back(str);
+						}
+					}
+					font->font->print(layer.batch, height, x, y, commands);
+
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"sprite",
+				[this](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					auto texture = ah.require_native<ScriptSprite>();
+					// auto color = ah.require_native<Rgb>();
+					const auto x = static_cast<float>(ah.require_float());
+					const auto y = static_cast<float>(ah.require_float());
+					const auto flip_x = ah.require_bool();
+					/* const auto flip_y =*/ah.require_bool();
+					ah.complete();
+
+					if (texture == nullptr)
+					{
+						return nullptr;
+					}
+
+					auto data = r.data;
+					if (data == nullptr)
+					{
+						lox::raise_error("must be called inside State.render()");
+						return nullptr;
+					}
+					if (data->layer.has_value() == false)
+					{
+						lox::raise_error("need to setup virtual render area first");
+						return nullptr;
+					}
+
+					render::RenderLayer2& layer = *data->layer;
+					animations.emplace_back(texture->animation);
+					const auto animation_index
+						= static_cast<std::size_t>(std::max(0, texture->animation->current_index));
+					Sprite& sprite = texture->sprites[animation_index];
+
+					// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
+					const auto tint = glm::vec4(1.0f);
+					const auto screen = Rectf{sprite.screen}.translate(x, y);
+					layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
+
+					return lox::make_nil();
+				}
+			);
 		fyro->define_native_class<ScriptFont>("Font");
-		fyro->define_native_function("load_font", [this](lox::Callable *, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-									 {
-			const auto path = ah.require_string();
-			const auto size = ah.require_int();
-			ah.complete();
-			ScriptFont r;
-			r.setup(path, static_cast<float>(size));
-			loaded_fonts.emplace_back(r.font);
-			return lox.make_native(r); });
+		fyro->define_native_function(
+			"load_font",
+			[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto path = ah.require_string();
+				const auto size = ah.require_int();
+				ah.complete();
+				ScriptFont r;
+				r.setup(path, static_cast<float>(size));
+				loaded_fonts.emplace_back(r.font);
+				return lox.make_native(r);
+			}
+		);
 		fyro->define_native_class<ScriptSprite>("Sprite")
-			.add_function("set_size", [](ScriptSprite &t, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
+			.add_function(
+				"set_size",
+				[](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					const auto width = static_cast<float>(ah.require_float());
+					const auto height = static_cast<float>(ah.require_float());
+					ah.complete();
+					for (auto& s: t.sprites)
+					{
+						s.screen
+							= Rectf{width, height}.set_bottom_left(s.screen.left, s.screen.bottom);
+					}
+					return lox::make_nil();
+				}
+			)
+			.add_function(
+				"align",
+				[](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					const auto x = static_cast<float>(ah.require_float());
+					const auto y = static_cast<float>(ah.require_float());
+					ah.complete();
+					for (auto& s: t.sprites)
+					{
+						s.screen = s.screen.set_bottom_left(
+							-s.screen.get_width() * x, -s.screen.get_height() * y
+						);
+					}
+					return lox::make_nil();
+				}
+			);
+		fyro->define_native_function(
+			"load_image",
+			[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto path = ah.require_string();
 				ah.complete();
-				for(auto& s: t.sprites)
-				{
-					s.screen = Rectf{width, height}.set_bottom_left(s.screen.left, s.screen.bottom);
-				}
-				return lox::make_nil(); })
-			.add_function("align", [](ScriptSprite &t, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				ah.complete();
-				for(auto& s: t.sprites)
-				{
-					s.screen = s.screen.set_bottom_left( -s.screen.get_width() * x, -s.screen.get_height()*y );
-				}
-				return lox::make_nil(); });
-		fyro->define_native_function("load_image", [this](lox::Callable *, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-									 {
-			const auto path = ah.require_string();
-			ah.complete();
-			ScriptSprite r;
-			Sprite s;
-			s.texture = texture_cache.get(path);
-			s.screen = Rectf{static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)};
-			r.sprites.emplace_back(s);
-			return lox.make_native(r); });
-		fyro->define_native_function("sync_sprite_animations", [](lox::Callable *, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-									 {
-			auto to_sprite_array = [](std::shared_ptr<lox::Array> src) -> std::vector<lox::NativeRef<ScriptSprite>>
-			{
-				if(src == nullptr) { return {}; }
-				std::vector<lox::NativeRef<ScriptSprite>> dst;
-				for(auto& v: src->values)
-				{
-					if(auto native = lox::as_native<ScriptSprite>(v); native)
-					{
-						dst.emplace_back(native);
-					}
-					else
-					{
-						// todo(Gustav): expand lox so this is part of the argument handler eval
-						// todo(Gustav): add argument index here for better error handling
-						lox::raise_error("element in array is not a Sprite");
-					}
-				}
-				return dst;
-			};
-			auto sprite_array = to_sprite_array(ah.require_array());
-			ah.complete();
-
-			std::shared_ptr<SpriteAnimation> main_animation;
-			for(auto& sp: sprite_array)
-			{
-				if(main_animation == nullptr)
-				{
-					main_animation = sp->animation;
-				}
-				else
-				{
-					// todo(Gustav): verify that animation has same number of frames!
-					if(sp->animation->total_sprites != main_animation->total_sprites)
-					{
-						lox::raise_error("unable to sync: sprite animations have different number of frames");
-					}
-					sp->animation = main_animation;
-				}
-			}
-
-			return lox::make_nil(); });
-		fyro->define_native_function("load_sprite", [this](lox::Callable *, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-									 {
-			auto to_vec2i_array = [](std::shared_ptr<lox::Array> src) -> std::vector<glm::ivec2>
-			{
-				if(src == nullptr) { return {}; }
-				std::vector<glm::ivec2> dst;
-				for(auto& v: src->values)
-				{
-					if(auto native = lox::as_native<glm::ivec2>(v); native)
-					{
-						dst.emplace_back(*native);
-					}
-					else
-					{
-						// todo(Gustav): expand lox so this is part of the argument handler eval
-						// todo(Gustav): add argument index here for better error handling
-						lox::raise_error("element in array is not a vec2i");
-					}
-				}
-				return dst;
-			};
-			const auto path = ah.require_string();
-			const auto tiles_per_x = static_cast<int>(ah.require_int());
-			const auto tiles_per_y = static_cast<int>(ah.require_int());
-			const auto anim_speed = static_cast<float>(ah.require_float());
-			auto tiles_array = to_vec2i_array(ah.require_array());
-			ah.complete();
-
-			if(tiles_array.empty())
-			{
-				// lox::raise_error("sprite array was empty");
-
-				for(int y=0; y < tiles_per_y; y+=1)
-				{
-					for(int x=0; x < tiles_per_x; x+=1)
-					{
-						tiles_array.emplace_back(x, y);
-					}
-				}
-			}
-
-			ScriptSprite r;
-			r.animation->setup(anim_speed, static_cast<int>(tiles_array.size()));
-			for(const auto& tile: tiles_array)
-			{
+				ScriptSprite r;
 				Sprite s;
 				s.texture = texture_cache.get(path);
-				const auto iw = static_cast<float>(s.texture->width);
-				const auto ih = static_cast<float>(s.texture->height);
-				s.screen = Rectf{iw, ih};
-
-				const auto tile_pix_w = iw/static_cast<float>(tiles_per_x);
-				const auto tile_pix_h = ih/static_cast<float>(tiles_per_y);
-				const auto tile_frac_w = tile_pix_w / iw;
-				const auto tile_frac_h = tile_pix_h / ih;
-				const auto dx = tile_frac_w * static_cast<float>(tile.x);
-				const auto dy = tile_frac_h * static_cast<float>(tile.y);
-				s.uv = Rectf{tile_frac_w, tile_frac_h}.translate(dx, dy);
+				s.screen = Rectf{
+					static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)
+				};
 				r.sprites.emplace_back(s);
+				return lox.make_native(r);
 			}
-			return lox.make_native(r); });
-		fyro->define_native_class<ScriptPlayer>("Player")
-			.add_native_getter<InputFrame>("current", [this](const ScriptPlayer &s)
-										   { return lox.make_native(s.player->current_frame); })
-			.add_native_getter<InputFrame>("last", [this](const ScriptPlayer &s)
-										   { return lox.make_native(s.player->last_frame); })
-			.add_function("run_haptics", [](ScriptPlayer &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
-				float force = static_cast<float>(ah.require_float());
-				float life = static_cast<float>(ah.require_float());
-				ah.complete();
-				if (r.player == nullptr)
+		);
+		fyro->define_native_function(
+			"sync_sprite_animations",
+			[](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto to_sprite_array = [](std::shared_ptr<lox::Array> src
+									   ) -> std::vector<lox::NativeRef<ScriptSprite>>
 				{
-					lox::raise_error("Player not created from input!");
+					if (src == nullptr)
+					{
+						return {};
+					}
+					std::vector<lox::NativeRef<ScriptSprite>> dst;
+					for (auto& v: src->values)
+					{
+						if (auto native = lox::as_native<ScriptSprite>(v); native)
+						{
+							dst.emplace_back(native);
+						}
+						else
+						{
+							// todo(Gustav): expand lox so this is part of the argument handler eval
+							// todo(Gustav): add argument index here for better error handling
+							lox::raise_error("element in array is not a Sprite");
+						}
+					}
+					return dst;
+				};
+				auto sprite_array = to_sprite_array(ah.require_array());
+				ah.complete();
+
+				std::shared_ptr<SpriteAnimation> main_animation;
+				for (auto& sp: sprite_array)
+				{
+					if (main_animation == nullptr)
+					{
+						main_animation = sp->animation;
+					}
+					else
+					{
+						// todo(Gustav): verify that animation has same number of frames!
+						if (sp->animation->total_sprites != main_animation->total_sprites)
+						{
+							lox::raise_error(
+								"unable to sync: sprite animations have different number of frames"
+							);
+						}
+						sp->animation = main_animation;
+					}
 				}
-				r.player->run_haptics(force, life);
-				return lox::make_nil(); });
-		fyro->define_native_class<ScriptRandom>("Random")
-			.add_function("next_int", [](ScriptRandom &r, lox::ArgumentHelper &ah) -> std::shared_ptr<lox::Object>
-						  {
+
+				return lox::make_nil();
+			}
+		);
+		fyro->define_native_function(
+			"load_sprite",
+			[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				auto to_vec2i_array = [](std::shared_ptr<lox::Array> src) -> std::vector<glm::ivec2>
+				{
+					if (src == nullptr)
+					{
+						return {};
+					}
+					std::vector<glm::ivec2> dst;
+					for (auto& v: src->values)
+					{
+						if (auto native = lox::as_native<glm::ivec2>(v); native)
+						{
+							dst.emplace_back(*native);
+						}
+						else
+						{
+							// todo(Gustav): expand lox so this is part of the argument handler eval
+							// todo(Gustav): add argument index here for better error handling
+							lox::raise_error("element in array is not a vec2i");
+						}
+					}
+					return dst;
+				};
+				const auto path = ah.require_string();
+				const auto tiles_per_x = static_cast<int>(ah.require_int());
+				const auto tiles_per_y = static_cast<int>(ah.require_int());
+				const auto anim_speed = static_cast<float>(ah.require_float());
+				auto tiles_array = to_vec2i_array(ah.require_array());
+				ah.complete();
+
+				if (tiles_array.empty())
+				{
+					// lox::raise_error("sprite array was empty");
+
+					for (int y = 0; y < tiles_per_y; y += 1)
+					{
+						for (int x = 0; x < tiles_per_x; x += 1)
+						{
+							tiles_array.emplace_back(x, y);
+						}
+					}
+				}
+
+				ScriptSprite r;
+				r.animation->setup(anim_speed, static_cast<int>(tiles_array.size()));
+				for (const auto& tile: tiles_array)
+				{
+					Sprite s;
+					s.texture = texture_cache.get(path);
+					const auto iw = static_cast<float>(s.texture->width);
+					const auto ih = static_cast<float>(s.texture->height);
+					s.screen = Rectf{iw, ih};
+
+					const auto tile_pix_w = iw / static_cast<float>(tiles_per_x);
+					const auto tile_pix_h = ih / static_cast<float>(tiles_per_y);
+					const auto tile_frac_w = tile_pix_w / iw;
+					const auto tile_frac_h = tile_pix_h / ih;
+					const auto dx = tile_frac_w * static_cast<float>(tile.x);
+					const auto dy = tile_frac_h * static_cast<float>(tile.y);
+					s.uv = Rectf{tile_frac_w, tile_frac_h}.translate(dx, dy);
+					r.sprites.emplace_back(s);
+				}
+				return lox.make_native(r);
+			}
+		);
+		fyro->define_native_class<ScriptPlayer>("Player")
+			.add_native_getter<InputFrame>(
+				"current",
+				[this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); }
+			)
+			.add_native_getter<InputFrame>(
+				"last",
+				[this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); }
+			)
+			.add_function(
+				"run_haptics",
+				[](ScriptPlayer& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+				{
+					float force = static_cast<float>(ah.require_float());
+					float life = static_cast<float>(ah.require_float());
+					ah.complete();
+					if (r.player == nullptr)
+					{
+						lox::raise_error("Player not created from input!");
+					}
+					r.player->run_haptics(force, life);
+					return lox::make_nil();
+				}
+			);
+		fyro->define_native_class<ScriptRandom>("Random").add_function(
+			"next_int",
+			[](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
 				const auto max_value = ah.require_int();
 				ah.complete();
 				const auto value = r.next_int(max_value);
-				return lox::make_number_int(value); });
+				return lox::make_number_int(value);
+			}
+		);
 		fyro->define_native_class<InputFrame>("InputFrame")
-			.add_getter<lox::Tf>("axis_left_x", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_left_x); })
-			.add_getter<lox::Tf>("axis_left_y", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_left_y); })
-			.add_getter<lox::Tf>("axis_right_x", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_right_x); })
-			.add_getter<lox::Tf>("axis_right_y", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_right_y); })
-			.add_getter<lox::Tf>("axis_trigger_left", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_trigger_left); })
-			.add_getter<lox::Tf>("axis_trigger_right", [](const InputFrame &f)
-								 { return static_cast<lox::Tf>(f.axis_trigger_right); })
-			.add_getter<bool>("button_a", [](const InputFrame &f)
-							  { return f.button_a; })
-			.add_getter<bool>("button_b", [](const InputFrame &f)
-							  { return f.button_b; })
-			.add_getter<bool>("button_x", [](const InputFrame &f)
-							  { return f.button_x; })
-			.add_getter<bool>("button_y", [](const InputFrame &f)
-							  { return f.button_y; })
-			.add_getter<bool>("button_back", [](const InputFrame &f)
-							  { return f.button_back; })
-			.add_getter<bool>("button_guide", [](const InputFrame &f)
-							  { return f.button_guide; })
-			.add_getter<bool>("button_start", [](const InputFrame &f)
-							  { return f.button_start; })
-			.add_getter<bool>("button_leftstick", [](const InputFrame &f)
-							  { return f.button_leftstick; })
-			.add_getter<bool>("button_rightstick", [](const InputFrame &f)
-							  { return f.button_rightstick; })
-			.add_getter<bool>("button_leftshoulder", [](const InputFrame &f)
-							  { return f.button_leftshoulder; })
-			.add_getter<bool>("button_rightshoulder", [](const InputFrame &f)
-							  { return f.button_rightshoulder; })
-			.add_getter<bool>("button_dpad_up", [](const InputFrame &f)
-							  { return f.button_dpad_up; })
-			.add_getter<bool>("button_dpad_down", [](const InputFrame &f)
-							  { return f.button_dpad_down; })
-			.add_getter<bool>("button_dpad_left", [](const InputFrame &f)
-							  { return f.button_dpad_left; })
-			.add_getter<bool>("button_dpad_right", [](const InputFrame &f)
-							  { return f.button_dpad_right; })
-			.add_getter<bool>("button_misc1", [](const InputFrame &f)
-							  { return f.button_misc1; })
-			.add_getter<bool>("button_paddle1", [](const InputFrame &f)
-							  { return f.button_paddle1; })
-			.add_getter<bool>("button_paddle2", [](const InputFrame &f)
-							  { return f.button_paddle2; })
-			.add_getter<bool>("button_paddle3", [](const InputFrame &f)
-							  { return f.button_paddle3; })
-			.add_getter<bool>("button_paddle4", [](const InputFrame &f)
-							  { return f.button_paddle4; })
-			.add_getter<bool>("button_touchpad", [](const InputFrame &f)
-							  { return f.button_touchpad; });
+			.add_getter<lox::Tf>(
+				"axis_left_x",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); }
+			)
+			.add_getter<lox::Tf>(
+				"axis_left_y",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_y); }
+			)
+			.add_getter<lox::Tf>(
+				"axis_right_x",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_x); }
+			)
+			.add_getter<lox::Tf>(
+				"axis_right_y",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_y); }
+			)
+			.add_getter<lox::Tf>(
+				"axis_trigger_left",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_left); }
+			)
+			.add_getter<lox::Tf>(
+				"axis_trigger_right",
+				[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_right); }
+			)
+			.add_getter<bool>("button_a", [](const InputFrame& f) { return f.button_a; })
+			.add_getter<bool>("button_b", [](const InputFrame& f) { return f.button_b; })
+			.add_getter<bool>("button_x", [](const InputFrame& f) { return f.button_x; })
+			.add_getter<bool>("button_y", [](const InputFrame& f) { return f.button_y; })
+			.add_getter<bool>("button_back", [](const InputFrame& f) { return f.button_back; })
+			.add_getter<bool>("button_guide", [](const InputFrame& f) { return f.button_guide; })
+			.add_getter<bool>("button_start", [](const InputFrame& f) { return f.button_start; })
+			.add_getter<bool>(
+				"button_leftstick", [](const InputFrame& f) { return f.button_leftstick; }
+			)
+			.add_getter<bool>(
+				"button_rightstick", [](const InputFrame& f) { return f.button_rightstick; }
+			)
+			.add_getter<bool>(
+				"button_leftshoulder", [](const InputFrame& f) { return f.button_leftshoulder; }
+			)
+			.add_getter<bool>(
+				"button_rightshoulder", [](const InputFrame& f) { return f.button_rightshoulder; }
+			)
+			.add_getter<bool>(
+				"button_dpad_up", [](const InputFrame& f) { return f.button_dpad_up; }
+			)
+			.add_getter<bool>(
+				"button_dpad_down", [](const InputFrame& f) { return f.button_dpad_down; }
+			)
+			.add_getter<bool>(
+				"button_dpad_left", [](const InputFrame& f) { return f.button_dpad_left; }
+			)
+			.add_getter<bool>(
+				"button_dpad_right", [](const InputFrame& f) { return f.button_dpad_right; }
+			)
+			.add_getter<bool>("button_misc1", [](const InputFrame& f) { return f.button_misc1; })
+			.add_getter<bool>(
+				"button_paddle1", [](const InputFrame& f) { return f.button_paddle1; }
+			)
+			.add_getter<bool>(
+				"button_paddle2", [](const InputFrame& f) { return f.button_paddle2; }
+			)
+			.add_getter<bool>(
+				"button_paddle3", [](const InputFrame& f) { return f.button_paddle3; }
+			)
+			.add_getter<bool>(
+				"button_paddle4", [](const InputFrame& f) { return f.button_paddle4; }
+			)
+			.add_getter<bool>(
+				"button_touchpad", [](const InputFrame& f) { return f.button_touchpad; }
+			);
 	}
 
-	void
-	on_update(float dt) override
+	void on_update(float dt) override
 	{
 		input.update(dt);
 		input.start_new_frame();
 
-		for (auto &anim : animations)
+		for (auto& anim: animations)
 		{
 			anim->update(dt);
 		}
@@ -1069,8 +1299,7 @@ struct ExampleGame : public Game
 		}
 	}
 
-	void
-	on_render(const render::RenderCommand &rc) override
+	void on_render(const render::RenderCommand& rc) override
 	{
 		animations.clear();
 		if (state)
@@ -1080,17 +1309,19 @@ struct ExampleGame : public Game
 		else
 		{
 			// todo(Gustav): draw some basic thing here since to state is set?
-			auto r = render::with_layer2(rc, render::LayoutData{render::ViewportStyle::extended, 200.0f, 200.0f});
+			auto r = render::with_layer2(
+				rc, render::LayoutData{render::ViewportStyle::extended, 200.0f, 200.0f}
+			);
 			r.batch->quadf({}, r.viewport_aabb_in_worldspace, {}, false, {0.8, 0.8, 0.8, 1.0f});
 			r.batch->submit();
 		}
 	}
 
-	void on_mouse_position(const render::InputCommand &, const glm::ivec2 &) override
+	void on_mouse_position(const render::InputCommand&, const glm::ivec2&) override
 	{
 	}
 
-	void on_added_controller(SDL_GameController *controller) override
+	void on_added_controller(SDL_GameController* controller) override
 	{
 		input.add_controller(controller);
 	}
@@ -1101,7 +1332,7 @@ struct ExampleGame : public Game
 	}
 };
 
-int run(int argc, char **argv)
+int run(int argc, char** argv)
 {
 	auto physfs = Physfs(argv[0]);
 	bool call_imgui = false;
@@ -1140,14 +1371,19 @@ int run(int argc, char **argv)
 	const auto data = load_game_data_or_default("main.json");
 
 	return run_game(
-		data.title, glm::ivec2{data.width, data.height}, call_imgui, []()
+		data.title,
+		glm::ivec2{data.width, data.height},
+		call_imgui,
+		[]()
 		{
 			auto game = std::make_shared<ExampleGame>();
 			game->run_main();
-			return game; });
+			return game;
+		}
+	);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 	try
 	{
@@ -1156,7 +1392,7 @@ int main(int argc, char **argv)
 	catch (...)
 	{
 		auto x = collect_exception();
-		for (const auto &e : x.errors)
+		for (const auto& e: x.errors)
 		{
 			LOG_ERROR("- {0}", e);
 		}

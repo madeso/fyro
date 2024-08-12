@@ -30,7 +30,6 @@ based on https://maddythorson.medium.com/celeste-and-towerfall-physics-d24bd2ae0
 struct Actor;
 struct Solid;
 
-
 struct Level
 {
 	std::vector<std::shared_ptr<Actor>> actors;
@@ -42,20 +41,16 @@ struct Level
 	void render(std::shared_ptr<lox::Object> arg);
 };
 
-
 struct ActorList
 {
 	std::set<Actor*> actors;
-	
+
 	void add(const std::shared_ptr<Actor>& actor);
 	bool has_actor(const std::shared_ptr<Actor>& a) const;
 };
 
-
-using CollisionReaction = std::function<void ()>;
+using CollisionReaction = std::function<void()>;
 void no_collision_reaction();
-
-
 
 struct Aabb
 {
@@ -72,7 +67,6 @@ struct Aabb
 	int get_top() const;
 	int get_bottom() const;
 };
-
 
 struct Actor : Aabb
 {
@@ -107,7 +101,6 @@ struct Actor : Aabb
 	bool please_move_y(int dy, CollisionReaction on_collision);
 };
 
-
 struct Solid : Aabb
 {
 	Level* level = nullptr;
@@ -134,4 +127,4 @@ struct Solid : Aabb
 
 
 
-}
+}  //  namespace fyro

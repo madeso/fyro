@@ -23,63 +23,89 @@
 #include "fyro/render/texture.h"
 #include "fyro/render/viewportdef.h"
 
+void Game::on_render(const render::RenderCommand&)
+{
+}
 
-void Game::on_render(const render::RenderCommand&) {}
-void Game::on_imgui() {}
-void Game::on_update(float) { }
-void Game::on_key(char, bool) {}
-void Game::on_mouse_position(const render::InputCommand&, const glm::ivec2&) {}
-void Game::on_mouse_button(const render::InputCommand&, MouseButton, bool) {}
-void Game::on_mouse_wheel(int) {}
+void Game::on_imgui()
+{
+}
 
-void Game::on_added_controller(SDL_GameController*) {}
-void Game::on_lost_joystick_instance(int) {}
+void Game::on_update(float)
+{
+}
+
+void Game::on_key(char, bool)
+{
+}
+
+void Game::on_mouse_position(const render::InputCommand&, const glm::ivec2&)
+{
+}
+
+void Game::on_mouse_button(const render::InputCommand&, MouseButton, bool)
+{
+}
+
+void Game::on_mouse_wheel(int)
+{
+}
+
+void Game::on_added_controller(SDL_GameController*)
+{
+}
+
+void Game::on_lost_joystick_instance(int)
+{
+}
 
 namespace
 {
 
-	MouseButton to_mouse_button(Uint8 mb)
+MouseButton to_mouse_button(Uint8 mb)
+{
+	switch (mb)
 	{
-		switch (mb)
-		{
-			case SDL_BUTTON_LEFT: return MouseButton::left;
-			case SDL_BUTTON_MIDDLE: return MouseButton::middle;
-			case SDL_BUTTON_RIGHT: return MouseButton::right;
-			case SDL_BUTTON_X1: return MouseButton::x1;
-			case SDL_BUTTON_X2: return MouseButton::x2;
-			default:
-				DIE("Invalid mouse button");
-				return MouseButton::invalid;
-		}
-	}
-
-	void setup_open_gl(render::OpenglStates* states, SDL_Window* window, SDL_GLContext glcontext, bool imgui)
-	{
-		opengl_setup(states);
-		opengl_set2d(states);
-
-		const auto* renderer = glGetString(GL_RENDERER); // get renderer string
-		const auto* version = glGetString(GL_VERSION); // version as a string
-		LOG_INFO("Renderer: {}", renderer);
-		LOG_INFO("Version: {}", version);
-
-		if(!imgui) { return; }
-
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		auto& io = ImGui::GetIO();
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-		ImGui::StyleColorsDark();
-
-		ImGui_ImplSDL2_InitForOpenGL(window, glcontext);
-
-		const char* glsl_version = "#version 130";
-		ImGui_ImplOpenGL3_Init(glsl_version);
+	case SDL_BUTTON_LEFT: return MouseButton::left;
+	case SDL_BUTTON_MIDDLE: return MouseButton::middle;
+	case SDL_BUTTON_RIGHT: return MouseButton::right;
+	case SDL_BUTTON_X1: return MouseButton::x1;
+	case SDL_BUTTON_X2: return MouseButton::x2;
+	default: DIE("Invalid mouse button"); return MouseButton::invalid;
 	}
 }
 
+void setup_open_gl(
+	render::OpenglStates* states, SDL_Window* window, SDL_GLContext glcontext, bool imgui
+)
+{
+	opengl_setup(states);
+	opengl_set2d(states);
+
+	const auto* renderer = glGetString(GL_RENDERER);  // get renderer string
+	const auto* version = glGetString(GL_VERSION);	// version as a string
+	LOG_INFO("Renderer: {}", renderer);
+	LOG_INFO("Version: {}", version);
+
+	if (! imgui)
+	{
+		return;
+	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	auto& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplSDL2_InitForOpenGL(window, glcontext);
+
+	const char* glsl_version = "#version 130";
+	ImGui_ImplOpenGL3_Init(glsl_version);
+}
+}  //  namespace
 
 struct Window
 {
@@ -103,8 +129,7 @@ struct Window
 		, sdl_glcontext(nullptr)
 		, states(st)
 	{
-		sdl_window = SDL_CreateWindow
-		(
+		sdl_window = SDL_CreateWindow(
 			t.c_str(),
 			SDL_WINDOWPOS_UNDEFINED,
 			SDL_WINDOWPOS_UNDEFINED,
@@ -113,7 +138,7 @@ struct Window
 			SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 		);
 
-		if(sdl_window == nullptr)
+		if (sdl_window == nullptr)
 		{
 			LOG_ERROR("Could not create window: {}", SDL_GetError());
 			return;
@@ -121,7 +146,7 @@ struct Window
 
 		sdl_glcontext = SDL_GL_CreateContext(sdl_window);
 
-		if(sdl_glcontext == nullptr)
+		if (sdl_glcontext == nullptr)
 		{
 			LOG_ERROR("Could not create window: {}", SDL_GetError());
 
@@ -131,7 +156,7 @@ struct Window
 			return;
 		}
 
-		if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
+		if (! gladLoadGLLoader(SDL_GL_GetProcAddress))
 		{
 			LOG_ERROR("Failed to initialize OpenGL context");
 
@@ -149,9 +174,9 @@ struct Window
 
 	~Window()
 	{
-		if(sdl_window)
+		if (sdl_window)
 		{
-			if(imgui)
+			if (imgui)
 			{
 				ImGui_ImplOpenGL3_Shutdown();
 				ImGui_ImplSDL2_Shutdown();
@@ -164,7 +189,10 @@ struct Window
 
 	void render() const
 	{
-		if(sdl_window == nullptr) { return; }
+		if (sdl_window == nullptr)
+		{
+			return;
+		}
 
 		glViewport(0, 0, size.x, size.y);
 
@@ -173,7 +201,7 @@ struct Window
 
 		game->on_render({states, render_data.get(), size});
 
-		if(imgui)
+		if (imgui)
 		{
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL2_NewFrame(sdl_window);
@@ -199,30 +227,30 @@ struct Window
 	}
 };
 
-
 void pump_events(Window* window)
 {
 	SDL_Event e;
-	while(SDL_PollEvent(&e) != 0)
+	while (SDL_PollEvent(&e) != 0)
 	{
 		bool handle_keyboard = true;
 		bool handle_mouse = true;
-		if(window->has_imgui())
+		if (window->has_imgui())
 		{
 			ImGui_ImplSDL2_ProcessEvent(&e);
 
 			auto& io = ImGui::GetIO();
-			handle_mouse = !io.WantCaptureMouse;
-			handle_keyboard = !io.WantCaptureKeyboard;
+			handle_mouse = ! io.WantCaptureMouse;
+			handle_keyboard = ! io.WantCaptureKeyboard;
 		}
 
-		switch(e.type)
+		switch (e.type)
 		{
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
-			if(handle_keyboard){
+			if (handle_keyboard)
+			{
 				const auto key = e.key.keysym.sym;
-				if(key >= SDLK_BACKSPACE && key <= SDLK_DELETE)
+				if (key >= SDLK_BACKSPACE && key <= SDLK_DELETE)
 				{
 					window->game->on_key(static_cast<char>(key), e.type == SDL_KEYDOWN);
 				}
@@ -230,24 +258,28 @@ void pump_events(Window* window)
 			break;
 
 		case SDL_MOUSEMOTION:
-			if(handle_mouse)
+			if (handle_mouse)
 			{
-				window->game->on_mouse_position({window->size}, glm::ivec2{e.motion.x, window->size.y - e.motion.y});
+				window->game->on_mouse_position(
+					{window->size}, glm::ivec2{e.motion.x, window->size.y - e.motion.y}
+				);
 			}
 			break;
 
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
-			if(handle_mouse)
+			if (handle_mouse)
 			{
-				window->game->on_mouse_button({window->size}, to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN);
+				window->game->on_mouse_button(
+					{window->size}, to_mouse_button(e.button.button), e.type == SDL_MOUSEBUTTONDOWN
+				);
 			}
 			break;
 
 		case SDL_MOUSEWHEEL:
-			if(handle_mouse)
+			if (handle_mouse)
 			{
-				if(e.wheel.y != 0)
+				if (e.wheel.y != 0)
 				{
 					const auto direction = e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
 					window->game->on_mouse_wheel(e.wheel.y * direction);
@@ -255,14 +287,12 @@ void pump_events(Window* window)
 			}
 			break;
 		case SDL_WINDOWEVENT:
-			if(e.window.event == SDL_WINDOWEVENT_RESIZED)
+			if (e.window.event == SDL_WINDOWEVENT_RESIZED)
 			{
 				window->on_resized({e.window.data1, e.window.data2});
 			}
 			break;
-		case SDL_QUIT:
-			window->running = false;
-			break;
+		case SDL_QUIT: window->running = false; break;
 		// Sint32 which;
 		// The joystick device index for the ADDED event, instance id for the REMOVED event
 		case SDL_JOYDEVICEADDED:
@@ -280,9 +310,7 @@ void pump_events(Window* window)
 				}
 			}
 			break;
-		case SDL_JOYDEVICEREMOVED:
-			window->game->on_lost_joystick_instance(e.jdevice.which);
-			break;
+		case SDL_JOYDEVICEREMOVED: window->game->on_lost_joystick_instance(e.jdevice.which); break;
 		default:
 			// ignore other events
 			break;
@@ -290,12 +318,16 @@ void pump_events(Window* window)
 	}
 }
 
-
-int setup_and_run(std::function<std::shared_ptr<Game>()> make_game, const std::string& title, const glm::ivec2& size, bool call_imgui)
+int setup_and_run(
+	std::function<std::shared_ptr<Game>()> make_game,
+	const std::string& title,
+	const glm::ivec2& size,
+	bool call_imgui
+)
 {
 	render::OpenglStates states;
 	auto window = ::Window{&states, title, size, call_imgui};
-	if(window.sdl_window == nullptr)
+	if (window.sdl_window == nullptr)
 	{
 		return -1;
 	}
@@ -304,15 +336,16 @@ int setup_and_run(std::function<std::shared_ptr<Game>()> make_game, const std::s
 
 	auto last = SDL_GetPerformanceCounter();
 
-	while(window.running)
+	while (window.running)
 	{
 		const auto now = SDL_GetPerformanceCounter();
-		const auto dt = static_cast<float>(now - last) / static_cast<float>(SDL_GetPerformanceFrequency());
+		const auto dt
+			= static_cast<float>(now - last) / static_cast<float>(SDL_GetPerformanceFrequency());
 		last = now;
 
 		pump_events(&window);
 		window.game->on_update(dt);
-		if(window.game->run == false)
+		if (window.game->run == false)
 		{
 			return 0;
 		}
@@ -322,14 +355,17 @@ int setup_and_run(std::function<std::shared_ptr<Game>()> make_game, const std::s
 	return 0;
 }
 
-
-int run_game(const std::string& title, const glm::ivec2& size, bool call_imgui, std::function<std::shared_ptr<Game>()> make_game)
+int run_game(
+	const std::string& title,
+	const glm::ivec2& size,
+	bool call_imgui,
+	std::function<std::shared_ptr<Game>()> make_game
+)
 {
-	constexpr Uint32 flags =
-		SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC
-		;
+	constexpr Uint32 flags
+		= SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC;
 
-	if(SDL_Init(flags) != 0)
+	if (SDL_Init(flags) != 0)
 	{
 		LOG_ERROR("Unable to initialize SDL: {}", SDL_GetError());
 		return -1;
@@ -352,4 +388,3 @@ int run_game(const std::string& title, const glm::ivec2& size, bool call_imgui, 
 	SDL_Quit();
 	return ret;
 }
-

@@ -2,8 +2,7 @@
 
 #include <filesystem>
 
-
-std::string get_dir_from_file(const std::string &path)
+std::string get_dir_from_file(const std::string& path)
 {
 	if (const auto slash = path.rfind('/'); slash != std::string::npos)
 	{
@@ -15,7 +14,7 @@ std::string get_dir_from_file(const std::string &path)
 	}
 }
 
-std::string cannonical_folder(const std::string &src)
+std::string cannonical_folder(const std::string& src)
 {
 	namespace fs = std::filesystem;
 
