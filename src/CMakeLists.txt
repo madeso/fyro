@@ -32,6 +32,7 @@ set(src_base
 	fyro/cache.cc fyro/cache.h
 	fyro/rgb.cc fyro/rgb.h
 	fyro/gamedata.cc fyro/gamedata.h
+	fyro/sprite.cc fyro/sprite.h
 
 	fyro/collision2.cc fyro/collision2.h
 	fyro/tiles.cc fyro/tiles.h

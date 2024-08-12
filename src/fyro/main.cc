@@ -18,6 +18,7 @@
 #include "fyro/vfs.h"
 #include "fyro/rgb.h"
 #include "fyro/gamedata.h"
+#include "fyro/sprite.h"
 
 #include "fyro/dependencies/dependency_sdl.h"
 #include "fyro/dependencies/dependency_imgui.h"
@@ -160,65 +161,6 @@ std::shared_ptr<render::Texture> load_texture(const std::string& path)
 		render::Transparency::include
 	));
 }
-
-struct Sprite
-{
-	Sprite()
-		: screen(1.0f, 1.0f)
-		, uv(1.0f, 1.0f)
-	{
-	}
-
-	std::shared_ptr<render::Texture> texture;
-	Rectf screen;
-	Rectf uv;
-};
-
-struct SpriteAnimation
-{
-	float speed = 0.0f;
-	float accum = 0.0f;
-	int current_index = 0;
-	int total_sprites = 0;
-
-	void setup(float a_speed, int a_total_sprites)
-	{
-		speed = a_speed;
-		total_sprites = a_total_sprites;
-
-		// todo(Gustav): randomize!
-		// accum = make_random(...);
-		// current_index = make_random(...);
-	}
-
-	void update(float dt)
-	{
-		assert(total_sprites >= 0);
-		if (total_sprites == 0)
-		{
-			return;
-		}
-
-		accum += dt;
-		while (accum > speed)
-		{
-			accum -= speed;
-			current_index += 1;
-			current_index = current_index % total_sprites;
-		}
-	}
-};
-
-struct ScriptSprite
-{
-	std::vector<Sprite> sprites;
-	std::shared_ptr<SpriteAnimation> animation;	 // may be shared between sprites
-
-	ScriptSprite()
-		: animation(std::make_shared<SpriteAnimation>())
-	{
-	}
-};
 
 // c++ wrappers over the specific lox class
 
