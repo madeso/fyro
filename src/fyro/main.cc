@@ -735,6 +735,9 @@ struct ExampleGame : public Game
 						return nullptr;
 					}
 
+					const bool pixelize = true;
+					using TPixelize = int;
+
 					const auto& aabb = r.data->layer->viewport_aabb_in_worldspace;
 					const auto center_screen
 						= glm::vec3{0.5f * aabb.get_width(), 0.5f * aabb.get_height(), 0};
@@ -748,10 +751,21 @@ struct ExampleGame : public Game
 						focusy = std::max(focusy, bounds->bottom + center_screen.y);
 					}
 
-					const auto translation = glm::vec3{-focusx, -focusy, 0} + center_screen;
+					const auto translation_float = glm::vec3{-focusx, -focusy, 0} + center_screen;
+					const auto translation = pixelize
+						? glm::vec3
+						{
+							static_cast<TPixelize>(translation_float.x),
+							static_cast<TPixelize>(translation_float.y),
+							0
+						}
+						: translation_float;
 					const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
 					r.data->rc.set_camera(camera_matrix);
-					r.data->focus = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
+					const auto focus_float = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
+					r.data->focus = pixelize
+						? glm::vec2{static_cast<TPixelize>(focus_float.x), static_cast<TPixelize>(focus_float.y)}
+						: focus_float;
 					return lox::make_nil();
 				}
 			)
