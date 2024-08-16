@@ -373,6 +373,45 @@ struct PrintLoxError : lox::PrintHandler
 	}
 };
 
+namespace script
+{
+void look_at(RenderData* r_data, ScriptLevelData* level_data, float focusx, float focusy)
+{
+	const bool pixelize = true;
+	using TPixelize = int;
+
+	const auto& aabb = r_data->layer->viewport_aabb_in_worldspace;
+	const auto center_screen = glm::vec3{0.5f * aabb.get_width(), 0.5f * aabb.get_height(), 0};
+
+	if (auto bounds = level_data->tiles.get_bounds(); bounds)
+	{
+		focusx = std::max(focusx, bounds->left + center_screen.x);
+		focusx = std::min(focusx, bounds->right - center_screen.x);
+
+		focusy = std::min(focusy, bounds->top - center_screen.y);
+		focusy = std::max(focusy, bounds->bottom + center_screen.y);
+	}
+
+	const auto translation_float = glm::vec3{-focusx, -focusy, 0} + center_screen;
+	const auto translation = pixelize
+		? glm::vec3
+		{
+			static_cast<TPixelize>(translation_float.x),
+			static_cast<TPixelize>(translation_float.y),
+			0
+		}
+		: translation_float;
+	const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
+	r_data->rc.set_camera(camera_matrix);
+	const auto focus_float = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
+	r_data->focus
+		= pixelize
+			? glm::
+				  vec2{static_cast<TPixelize>(focus_float.x), static_cast<TPixelize>(focus_float.y)}
+			: focus_float;
+}
+}  //  namespace script
+
 ExampleGame::ExampleGame()
 	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
 	, texture_cache([](const std::string& path) { return load_texture(path); })
@@ -698,37 +737,7 @@ void ExampleGame::bind_functions()
 					return nullptr;
 				}
 
-				const bool pixelize = true;
-				using TPixelize = int;
-
-				const auto& aabb = r.data->layer->viewport_aabb_in_worldspace;
-				const auto center_screen
-					= glm::vec3{0.5f * aabb.get_width(), 0.5f * aabb.get_height(), 0};
-
-				if (auto bounds = level->data->tiles.get_bounds(); bounds)
-				{
-					focusx = std::max(focusx, bounds->left + center_screen.x);
-					focusx = std::min(focusx, bounds->right - center_screen.x);
-
-					focusy = std::min(focusy, bounds->top - center_screen.y);
-					focusy = std::max(focusy, bounds->bottom + center_screen.y);
-				}
-
-				const auto translation_float = glm::vec3{-focusx, -focusy, 0} + center_screen;
-				const auto translation = pixelize
-					? glm::vec3
-					{
-						static_cast<TPixelize>(translation_float.x),
-						static_cast<TPixelize>(translation_float.y),
-						0
-					}
-					: translation_float;
-				const auto camera_matrix = glm::translate(glm::mat4(1.0f), translation);
-				r.data->rc.set_camera(camera_matrix);
-				const auto focus_float = glm::vec2{focusx, focusy} - glm::vec2(center_screen);
-				r.data->focus = pixelize
-					? glm::vec2{static_cast<TPixelize>(focus_float.x), static_cast<TPixelize>(focus_float.y)}
-					: focus_float;
+				script::look_at(r.data.get(), level->data.get(), focusx, focusy);
 				return lox::make_nil();
 			}
 		)
@@ -754,8 +763,8 @@ void ExampleGame::bind_functions()
 					lox::raise_error("need to setup virtual render area first");
 					return nullptr;
 				}
-
 				render::RenderLayer2& layer = *data->layer;
+
 				layer.batch->quadf(
 					{},
 					layer.viewport_aabb_in_worldspace.translate(data->focus),
