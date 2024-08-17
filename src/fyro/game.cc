@@ -443,6 +443,26 @@ void ExampleGame::run_main()
 	}
 }
 
+#define LOX_ASSERT(check) \
+	do \
+	{ \
+		if (! (check)) \
+		{ \
+			assert(false && #check); \
+			lox::raise_error("fyro internal error: " #check); \
+			return nullptr; \
+		} \
+	} while (false)
+#define LOX_ERROR(check, message) \
+	do \
+	{ \
+		if (! (check)) \
+		{ \
+			lox::raise_error(message); \
+			return nullptr; \
+		} \
+	} while (false)
+
 void ExampleGame::bind_named_colors()
 {
 	auto rgb = lox.in_package("fyro.rgb");
@@ -702,19 +722,9 @@ void ExampleGame::bind_functions()
 				const auto height = static_cast<float>(ah.require_float());
 				ah.complete();
 
-				if (width <= 0.0f)
-				{
-					lox::raise_error("width must be positive");
-				}
-				if (height <= 0.0f)
-				{
-					lox::raise_error("height must be positive");
-				}
-				if (r.data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
+				LOX_ERROR(width > 0.0f, "width must be positive");
+				LOX_ERROR(height > 0.0f, "height must be positive");
+				LOX_ERROR(r.data, "must be called inside State.render()");
 
 				r.data->layer = render::with_layer2(
 					r.data->rc, render::LayoutData{render::ViewportStyle::black_bars, width, height}
@@ -731,11 +741,7 @@ void ExampleGame::bind_functions()
 				auto level = ah.require_native<ScriptLevel>();
 				ah.complete();
 
-				if (r.data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
+				LOX_ERROR(r.data, "must be called inside State.render()");
 
 				script::look_at(r.data.get(), level->data.get(), focusx, focusy);
 				return lox::make_nil();
@@ -753,16 +759,9 @@ void ExampleGame::bind_functions()
 				}
 
 				auto data = r.data;
-				if (data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
-				if (data->layer.has_value() == false)
-				{
-					lox::raise_error("need to setup virtual render area first");
-					return nullptr;
-				}
+				LOX_ERROR(data, "must be called inside State.render()");
+				LOX_ERROR(data->layer, "need to setup virtual render area first");
+
 				render::RenderLayer2& layer = *data->layer;
 
 				layer.batch->quadf(
@@ -786,33 +785,16 @@ void ExampleGame::bind_functions()
 				const auto height = static_cast<float>(ah.require_float());
 
 				ah.complete();
-				if (color == nullptr)
-				{
-					return nullptr;
-				}
-
-				if (width <= 0.0f)
-				{
-					lox::raise_error("width must be positive");
-				}
-				if (height <= 0.0f)
-				{
-					lox::raise_error("height must be positive");
-				}
+				LOX_ASSERT(color);
+				LOX_ERROR(width > 0.0f, "width must be positive");
+				LOX_ERROR(height > 0.0f, "height must be positive");
 
 				auto data = r.data;
-				if (data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
-				if (data->layer.has_value() == false)
-				{
-					lox::raise_error("need to setup virtual render area first");
-					return nullptr;
-				}
+				LOX_ERROR(data, "must be called inside State.render()");
+				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
 				render::RenderLayer2& layer = *data->layer;
+
 				layer.batch->quadf(
 					{},
 					Rect{width, height}.translate(x, y),
@@ -836,22 +818,11 @@ void ExampleGame::bind_functions()
 				const auto script_commands = ah.require_array();
 
 				ah.complete();
-				if (font == nullptr)
-				{
-					return nullptr;
-				}
+				LOX_ASSERT(font);
 
 				auto data = r.data;
-				if (data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
-				if (data->layer.has_value() == false)
-				{
-					lox::raise_error("need to setup virtual render area first");
-					return nullptr;
-				}
+				LOX_ERROR(data, "must be called inside State.render()");
+				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
 				render::RenderLayer2& layer = *data->layer;
 
@@ -885,22 +856,11 @@ void ExampleGame::bind_functions()
 				/* const auto flip_y =*/ah.require_bool();
 				ah.complete();
 
-				if (texture == nullptr)
-				{
-					return nullptr;
-				}
+				LOX_ASSERT(texture);
 
 				auto data = r.data;
-				if (data == nullptr)
-				{
-					lox::raise_error("must be called inside State.render()");
-					return nullptr;
-				}
-				if (data->layer.has_value() == false)
-				{
-					lox::raise_error("need to setup virtual render area first");
-					return nullptr;
-				}
+				LOX_ERROR(data, "must be called inside State.render()");
+				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
 				render::RenderLayer2& layer = *data->layer;
 				animations.emplace_back(texture->animation);
