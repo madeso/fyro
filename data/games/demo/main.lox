@@ -53,7 +53,7 @@ class GameState
 
 		var red = new fyro.Rgb(1, 0, 0);
 		cmd.rect(red, this.p1x, this.p1y, 50, 50);
-		cmd.sprite(letter, this.p1x, this.p1y);
+		cmd.sprite(letter, this.p1x, this.p1y, false, false);
 
 		if(this.p2)
 		{
