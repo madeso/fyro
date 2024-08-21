@@ -410,6 +410,49 @@ void look_at(RenderData* r_data, ScriptLevelData* level_data, float focusx, floa
 				  vec2{static_cast<TPixelize>(focus_float.x), static_cast<TPixelize>(focus_float.y)}
 			: focus_float;
 }
+
+void render_level(ScriptLevelData* level, lox::NativeRef<RenderArg> rend)
+{
+	level->tiles.render(*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace);
+	level->level.render(rend.instance);
+}
+
+std::vector<render::TextCommand> TextCommand_vector_from_array(lox::Array* script_commands)
+{
+	std::vector<render::TextCommand> commands;
+	for (auto& obj: script_commands->values)
+	{
+		if (auto color = lox::as_native<Rgb>(obj); color)
+		{
+			commands.emplace_back(glm::vec4{color->r, color->g, color->b, 1.0f});
+		}
+		else
+		{
+			const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
+			commands.emplace_back(str);
+		}
+	}
+	return commands;
+}
+
+void draw_sprite(
+	render::RenderLayer2& layer,
+	std::vector<std::shared_ptr<SpriteAnimation>>& animations,
+	ScriptSprite* texture,
+	float x,
+	float y,
+	bool flip_x
+)
+{
+	animations.emplace_back(texture->animation);
+	const auto animation_index
+		= static_cast<std::size_t>(std::max(0, texture->animation->current_index));
+	Sprite& sprite = texture->sprites[animation_index];
+
+	const auto tint = glm::vec4(1.0f);
+	const auto screen = Rectf{sprite.screen}.translate(x, y);
+	layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
+}
 }  //  namespace script
 
 ExampleGame::ExampleGame()
@@ -655,10 +698,7 @@ void ExampleGame::bind_collision()
 			{
 				auto rend = ah.require_native<RenderArg>();
 				ah.complete();
-				r.data->tiles.render(
-					*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace
-				);
-				r.data->level.render(rend.instance);
+				script::render_level(r.data.get(), rend);
 				return lox::make_nil();
 			}
 		);
@@ -826,19 +866,7 @@ void ExampleGame::bind_functions()
 
 				render::RenderLayer2& layer = *data->layer;
 
-				std::vector<render::TextCommand> commands;
-				for (auto& obj: script_commands->values)
-				{
-					if (auto color = lox::as_native<Rgb>(obj); color)
-					{
-						commands.emplace_back(glm::vec4{color->r, color->g, color->b, 1.0f});
-					}
-					else
-					{
-						const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
-						commands.emplace_back(str);
-					}
-				}
+				const auto commands = script::TextCommand_vector_from_array(script_commands.get());
 				font->font->print(layer.batch, height, x, y, commands);
 
 				return lox::make_nil();
@@ -862,16 +890,7 @@ void ExampleGame::bind_functions()
 				LOX_ERROR(data, "must be called inside State.render()");
 				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
-				render::RenderLayer2& layer = *data->layer;
-				animations.emplace_back(texture->animation);
-				const auto animation_index
-					= static_cast<std::size_t>(std::max(0, texture->animation->current_index));
-				Sprite& sprite = texture->sprites[animation_index];
-
-				// void quad(std::optional<Texture*> texture, const Rectf& scr, const Recti& texturecoord, const glm::vec4& tint = glm::vec4(1.0f));
-				const auto tint = glm::vec4(1.0f);
-				const auto screen = Rectf{sprite.screen}.translate(x, y);
-				layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
+				script::draw_sprite(*data->layer, animations, texture.get_ptr(), x, y, flip_x);
 
 				return lox::make_nil();
 			}
