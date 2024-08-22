@@ -453,6 +453,74 @@ void draw_sprite(
 	const auto screen = Rectf{sprite.screen}.translate(x, y);
 	layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
 }
+
+std::vector<glm::ivec2> to_vec2i_array(std::shared_ptr<lox::Array> src)
+{
+	if (src == nullptr)
+	{
+		return {};
+	}
+	std::vector<glm::ivec2> dst;
+	for (auto& v: src->values)
+	{
+		if (auto native = lox::as_native<glm::ivec2>(v); native)
+		{
+			dst.emplace_back(*native);
+		}
+		else
+		{
+			// todo(Gustav): expand lox so this is part of the argument handler eval
+			// todo(Gustav): add argument index here for better error handling
+			lox::raise_error("element in array is not a vec2i");
+		}
+	}
+	return dst;
+}
+
+ScriptSprite load_sprite(
+	const std::string& path,
+	Cache<std::string, render::Texture>& texture_cache,
+	int tiles_per_x,
+	int tiles_per_y,
+	float anim_speed,
+	const std::vector<glm::ivec2>& tiles_array_arg
+)
+{
+	auto tiles_array = tiles_array_arg;
+	if (tiles_array.empty())
+	{
+		// lox::raise_error("sprite array was empty");
+
+		for (int y = 0; y < tiles_per_y; y += 1)
+		{
+			for (int x = 0; x < tiles_per_x; x += 1)
+			{
+				tiles_array.emplace_back(x, y);
+			}
+		}
+	}
+
+	ScriptSprite r;
+	r.animation->setup(anim_speed, static_cast<int>(tiles_array.size()));
+	for (const auto& tile: tiles_array)
+	{
+		Sprite s;
+		s.texture = texture_cache.get(path);
+		const auto iw = static_cast<float>(s.texture->width);
+		const auto ih = static_cast<float>(s.texture->height);
+		s.screen = Rectf{iw, ih};
+
+		const auto tile_pix_w = iw / static_cast<float>(tiles_per_x);
+		const auto tile_pix_h = ih / static_cast<float>(tiles_per_y);
+		const auto tile_frac_w = tile_pix_w / iw;
+		const auto tile_frac_h = tile_pix_h / ih;
+		const auto dx = tile_frac_w * static_cast<float>(tile.x);
+		const auto dy = tile_frac_h * static_cast<float>(tile.y);
+		s.uv = Rectf{tile_frac_w, tile_frac_h}.translate(dx, dy);
+		r.sprites.emplace_back(s);
+	}
+	return r;
+}
 }  //  namespace script
 
 ExampleGame::ExampleGame()
@@ -1013,67 +1081,16 @@ void ExampleGame::bind_functions()
 		"load_sprite",
 		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			auto to_vec2i_array = [](std::shared_ptr<lox::Array> src) -> std::vector<glm::ivec2>
-			{
-				if (src == nullptr)
-				{
-					return {};
-				}
-				std::vector<glm::ivec2> dst;
-				for (auto& v: src->values)
-				{
-					if (auto native = lox::as_native<glm::ivec2>(v); native)
-					{
-						dst.emplace_back(*native);
-					}
-					else
-					{
-						// todo(Gustav): expand lox so this is part of the argument handler eval
-						// todo(Gustav): add argument index here for better error handling
-						lox::raise_error("element in array is not a vec2i");
-					}
-				}
-				return dst;
-			};
 			const auto path = ah.require_string();
 			const auto tiles_per_x = static_cast<int>(ah.require_int());
 			const auto tiles_per_y = static_cast<int>(ah.require_int());
 			const auto anim_speed = static_cast<float>(ah.require_float());
-			auto tiles_array = to_vec2i_array(ah.require_array());
+			auto tiles_array = script::to_vec2i_array(ah.require_array());
 			ah.complete();
 
-			if (tiles_array.empty())
-			{
-				// lox::raise_error("sprite array was empty");
-
-				for (int y = 0; y < tiles_per_y; y += 1)
-				{
-					for (int x = 0; x < tiles_per_x; x += 1)
-					{
-						tiles_array.emplace_back(x, y);
-					}
-				}
-			}
-
-			ScriptSprite r;
-			r.animation->setup(anim_speed, static_cast<int>(tiles_array.size()));
-			for (const auto& tile: tiles_array)
-			{
-				Sprite s;
-				s.texture = texture_cache.get(path);
-				const auto iw = static_cast<float>(s.texture->width);
-				const auto ih = static_cast<float>(s.texture->height);
-				s.screen = Rectf{iw, ih};
-
-				const auto tile_pix_w = iw / static_cast<float>(tiles_per_x);
-				const auto tile_pix_h = ih / static_cast<float>(tiles_per_y);
-				const auto tile_frac_w = tile_pix_w / iw;
-				const auto tile_frac_h = tile_pix_h / ih;
-				const auto dx = tile_frac_w * static_cast<float>(tile.x);
-				const auto dy = tile_frac_h * static_cast<float>(tile.y);
-				s.uv = Rectf{tile_frac_w, tile_frac_h}.translate(dx, dy);
-				r.sprites.emplace_back(s);
-			}
+			auto r = script::load_sprite(
+				path, texture_cache, tiles_per_x, tiles_per_y, anim_speed, tiles_array
+			);
 			return lox.make_native(r);
 		}
 	);
