@@ -820,7 +820,6 @@ void ExampleGame::bind_functions()
 		}
 	);
 
-	// todo(Gustav): validate argumends and raise script error on invalid
 	fyro->define_native_class<RenderArg>("RenderCommand")
 		.add_function(
 			"windowbox",
