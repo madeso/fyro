@@ -16,6 +16,8 @@ struct State
 	virtual void render(const render::RenderCommand& rc) = 0;
 };
 
+using AnimationsArray = std::vector<std::shared_ptr<SpriteAnimation>>;
+
 struct ExampleGame : public Game
 {
 	lox::Lox lox;
@@ -25,14 +27,13 @@ struct ExampleGame : public Game
 	std::unique_ptr<State> state;
 	std::vector<std::shared_ptr<render::Font>> loaded_fonts;  // todo(Gustav): replace with cache
 	Cache<std::string, render::Texture> texture_cache;
-	std::vector<std::shared_ptr<SpriteAnimation>> animations;
+	AnimationsArray animations;
 
 	ExampleGame();
 
 	void on_imgui() override;
 
 	void run_main();
-	void bind_collision();
 	void bind_functions();
 
 	void on_update(float dt) override;

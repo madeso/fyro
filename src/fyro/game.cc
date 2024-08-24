@@ -523,6 +523,26 @@ ScriptSprite load_sprite(
 }
 }  //  namespace script
 
+#define LOX_ASSERT(check) \
+	do \
+	{ \
+		if (! (check)) \
+		{ \
+			assert(false && #check); \
+			lox::raise_error("fyro internal error: " #check); \
+			return nullptr; \
+		} \
+	} while (false)
+#define LOX_ERROR(check, message) \
+	do \
+	{ \
+		if (! (check)) \
+		{ \
+			lox::raise_error(message); \
+			return nullptr; \
+		} \
+	} while (false)
+
 namespace bind
 {
 void bind_named_colors(lox::Lox* lox)
@@ -561,64 +581,11 @@ void bind_named_colors(lox::Lox* lox)
 	rgb->add_native_getter("cyan", [lox]() { return lox->make_native(Rgb{41, 208, 208}); });
 	rgb->add_native_getter("pure_cyan", [lox]() { return lox->make_native(Rgb{0, 255, 255}); });
 }
-}  //  namespace bind
 
-ExampleGame::ExampleGame()
-	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
-	, texture_cache([](const std::string& path) { return load_texture(path); })
+void bind_phys_actor(lox::Lox* lox)
 {
-	// todo(Gustav): read/write to json and provide ui for adding new mappings
-	keyboards.mappings.emplace_back(create_default_mapping_for_player1());
-	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
-
-	bind::bind_named_colors(&lox);
-	bind_collision();
-	bind_functions();
-}
-
-void ExampleGame::on_imgui()
-{
-	for (auto& f: loaded_fonts)
-	{
-		f->imgui();
-	}
-	input.on_imgui();
-}
-
-void ExampleGame::run_main()
-{
-	const auto src = read_file_to_string("main.lox");
-	if (false == lox.run_string(src))
-	{
-		throw Exception{{"Unable to run script"}};
-	}
-}
-
-#define LOX_ASSERT(check) \
-	do \
-	{ \
-		if (! (check)) \
-		{ \
-			assert(false && #check); \
-			lox::raise_error("fyro internal error: " #check); \
-			return nullptr; \
-		} \
-	} while (false)
-#define LOX_ERROR(check, message) \
-	do \
-	{ \
-		if (! (check)) \
-		{ \
-			lox::raise_error(message); \
-			return nullptr; \
-		} \
-	} while (false)
-
-void ExampleGame::bind_collision()
-{
-	auto fyro = lox.in_package("fyro");
-
-	lox.in_global_scope()
+	// todo(Gustav): expand script to allow inherit from namespace.Class
+	lox->in_global_scope()
 		->define_native_class<ScriptActorBase>("Actor")
 		.add_function(
 			"move_x",
@@ -680,8 +647,11 @@ void ExampleGame::bind_collision()
 				return lox::make_nil();
 			}
 		);
+}
 
-	lox.in_global_scope()
+void bind_phys_solid(lox::Lox* lox)
+{
+	lox->in_global_scope()
 		->define_native_class<ScriptSolidBase>("Solid")
 		.add_function(
 			"move",
@@ -721,7 +691,11 @@ void ExampleGame::bind_collision()
 				return lox::make_nil();
 			}
 		);
+}
 
+void bind_phys_level(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
 	fyro->define_native_class<ScriptLevel>("Level")
 		.add_function(
 			"add",
@@ -775,54 +749,9 @@ void ExampleGame::bind_collision()
 		);
 }
 
-void ExampleGame::bind_functions()
+void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 {
-	auto fyro = lox.in_package("fyro");
-
-	fyro->define_native_function(
-		"set_state",
-		[this](lox::Callable*, lox::ArgumentHelper& arguments)
-		{
-			auto instance = arguments.require_instance();
-			arguments.complete();
-			next_state = std::make_unique<ScriptState>(instance, &lox);
-			return lox::make_nil();
-		}
-	);
-
-	fyro->define_native_function(
-		"get_input",
-		[this](lox::Callable*, lox::ArgumentHelper& arguments)
-		{
-			arguments.complete();
-			auto frame = input.capture_player();
-			return lox.make_native<ScriptPlayer>(ScriptPlayer{frame});
-		}
-	);
-
-	fyro->define_native_class<Rgb>(
-		"Rgb",
-		[](lox::ArgumentHelper& ah) -> Rgb
-		{
-			const auto r = static_cast<float>(ah.require_float());
-			const auto g = static_cast<float>(ah.require_float());
-			const auto b = static_cast<float>(ah.require_float());
-			ah.complete();
-			return Rgb{r, g, b};
-		}
-	);
-
-	fyro->define_native_class<glm::ivec2>(
-		"vec2i",
-		[](lox::ArgumentHelper& ah) -> glm::ivec2
-		{
-			const auto x = ah.require_int();
-			const auto y = ah.require_int();
-			ah.complete();
-			return glm::ivec2{x, y};
-		}
-	);
-
+	auto fyro = lox->in_package("fyro");
 	fyro->define_native_class<RenderArg>("RenderCommand")
 		.add_function(
 			"windowbox",
@@ -944,7 +873,7 @@ void ExampleGame::bind_functions()
 		)
 		.add_function(
 			"sprite",
-			[this](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			[animations](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
 				auto texture = ah.require_native<ScriptSprite>();
 				// auto color = ah.require_native<Rgb>();
@@ -960,25 +889,157 @@ void ExampleGame::bind_functions()
 				LOX_ERROR(data, "must be called inside State.render()");
 				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
-				script::draw_sprite(*data->layer, animations, texture.get_ptr(), x, y, flip_x);
+				script::draw_sprite(*data->layer, *animations, texture.get_ptr(), x, y, flip_x);
 
 				return lox::make_nil();
 			}
 		);
-	fyro->define_native_class<ScriptFont>("Font");
-	fyro->define_native_function(
-		"load_font",
-		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+}
+
+void bind_input_frame(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<InputFrame>("InputFrame")
+		.add_getter<lox::Tf>(
+			"axis_left_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); }
+		)
+		.add_getter<lox::Tf>(
+			"axis_left_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_y); }
+		)
+		.add_getter<lox::Tf>(
+			"axis_right_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_x); }
+		)
+		.add_getter<lox::Tf>(
+			"axis_right_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_y); }
+		)
+		.add_getter<lox::Tf>(
+			"axis_trigger_left",
+			[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_left); }
+		)
+		.add_getter<lox::Tf>(
+			"axis_trigger_right",
+			[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_right); }
+		)
+		.add_getter<bool>("button_a", [](const InputFrame& f) { return f.button_a; })
+		.add_getter<bool>("button_b", [](const InputFrame& f) { return f.button_b; })
+		.add_getter<bool>("button_x", [](const InputFrame& f) { return f.button_x; })
+		.add_getter<bool>("button_y", [](const InputFrame& f) { return f.button_y; })
+		.add_getter<bool>("button_back", [](const InputFrame& f) { return f.button_back; })
+		.add_getter<bool>("button_guide", [](const InputFrame& f) { return f.button_guide; })
+		.add_getter<bool>("button_start", [](const InputFrame& f) { return f.button_start; })
+		.add_getter<bool>(
+			"button_leftstick", [](const InputFrame& f) { return f.button_leftstick; }
+		)
+		.add_getter<bool>(
+			"button_rightstick", [](const InputFrame& f) { return f.button_rightstick; }
+		)
+		.add_getter<bool>(
+			"button_leftshoulder", [](const InputFrame& f) { return f.button_leftshoulder; }
+		)
+		.add_getter<bool>(
+			"button_rightshoulder", [](const InputFrame& f) { return f.button_rightshoulder; }
+		)
+		.add_getter<bool>("button_dpad_up", [](const InputFrame& f) { return f.button_dpad_up; })
+		.add_getter<bool>(
+			"button_dpad_down", [](const InputFrame& f) { return f.button_dpad_down; }
+		)
+		.add_getter<bool>(
+			"button_dpad_left", [](const InputFrame& f) { return f.button_dpad_left; }
+		)
+		.add_getter<bool>(
+			"button_dpad_right", [](const InputFrame& f) { return f.button_dpad_right; }
+		)
+		.add_getter<bool>("button_misc1", [](const InputFrame& f) { return f.button_misc1; })
+		.add_getter<bool>("button_paddle1", [](const InputFrame& f) { return f.button_paddle1; })
+		.add_getter<bool>("button_paddle2", [](const InputFrame& f) { return f.button_paddle2; })
+		.add_getter<bool>("button_paddle3", [](const InputFrame& f) { return f.button_paddle3; })
+		.add_getter<bool>("button_paddle4", [](const InputFrame& f) { return f.button_paddle4; })
+		.add_getter<bool>("button_touchpad", [](const InputFrame& f) { return f.button_touchpad; });
+}
+
+void bind_random(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<ScriptRandom>("Random").add_function(
+		"next_int",
+		[](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			const auto path = ah.require_string();
-			const auto size = ah.require_int();
+			const auto max_value = ah.require_int();
 			ah.complete();
-			ScriptFont r;
-			r.setup(path, static_cast<float>(size));
-			loaded_fonts.emplace_back(r.font);
-			return lox.make_native(r);
+			const auto value = r.next_int(max_value);
+			return lox::make_number_int(value);
 		}
 	);
+}
+
+void bind_rgb(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<Rgb>(
+		"Rgb",
+		[](lox::ArgumentHelper& ah) -> Rgb
+		{
+			const auto r = static_cast<float>(ah.require_float());
+			const auto g = static_cast<float>(ah.require_float());
+			const auto b = static_cast<float>(ah.require_float());
+			ah.complete();
+			return Rgb{r, g, b};
+		}
+	);
+}
+
+void bind_ivec2(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<glm::ivec2>(
+		"vec2i",
+		[](lox::ArgumentHelper& ah) -> glm::ivec2
+		{
+			const auto x = ah.require_int();
+			const auto y = ah.require_int();
+			ah.complete();
+			return glm::ivec2{x, y};
+		}
+	);
+}
+
+void bind_font(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<ScriptFont>("Font");
+}
+
+void bind_player(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<ScriptPlayer>("Player")
+		.add_native_getter<InputFrame>(
+			"current",
+			[lox](const ScriptPlayer& s) { return lox->make_native(s.player->current_frame); }
+		)
+		.add_native_getter<InputFrame>(
+			"last", [lox](const ScriptPlayer& s) { return lox->make_native(s.player->last_frame); }
+		)
+		.add_function(
+			"run_haptics",
+			[](ScriptPlayer& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				float force = static_cast<float>(ah.require_float());
+				float life = static_cast<float>(ah.require_float());
+				ah.complete();
+				if (r.player == nullptr)
+				{
+					lox::raise_error("Player not created from input!");
+				}
+				r.player->run_haptics(force, life);
+				return lox::make_nil();
+			}
+		);
+}
+
+void bind_sprite(lox::Lox* lox)
+{
+	auto fyro = lox->in_package("fyro");
 	fyro->define_native_class<ScriptSprite>("Sprite")
 		.add_function(
 			"set_size",
@@ -1010,6 +1071,90 @@ void ExampleGame::bind_functions()
 				return lox::make_nil();
 			}
 		);
+}
+
+
+}  //  namespace bind
+
+ExampleGame::ExampleGame()
+	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
+	, texture_cache([](const std::string& path) { return load_texture(path); })
+{
+	// todo(Gustav): read/write to json and provide ui for adding new mappings
+	keyboards.mappings.emplace_back(create_default_mapping_for_player1());
+	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
+
+	bind::bind_named_colors(&lox);
+
+	bind::bind_phys_actor(&lox);
+	bind::bind_phys_solid(&lox);
+	bind::bind_phys_level(&lox);
+
+	bind_functions();
+}
+
+void ExampleGame::on_imgui()
+{
+	for (auto& f: loaded_fonts)
+	{
+		f->imgui();
+	}
+	input.on_imgui();
+}
+
+void ExampleGame::run_main()
+{
+	const auto src = read_file_to_string("main.lox");
+	if (false == lox.run_string(src))
+	{
+		throw Exception{{"Unable to run script"}};
+	}
+}
+
+void ExampleGame::bind_functions()
+{
+	auto fyro = lox.in_package("fyro");
+
+	fyro->define_native_function(
+		"set_state",
+		[this](lox::Callable*, lox::ArgumentHelper& arguments)
+		{
+			auto instance = arguments.require_instance();
+			arguments.complete();
+			next_state = std::make_unique<ScriptState>(instance, &lox);
+			return lox::make_nil();
+		}
+	);
+
+	fyro->define_native_function(
+		"get_input",
+		[this](lox::Callable*, lox::ArgumentHelper& arguments)
+		{
+			arguments.complete();
+			auto frame = input.capture_player();
+			return lox.make_native<ScriptPlayer>(ScriptPlayer{frame});
+		}
+	);
+
+	bind::bind_rgb(&lox);
+	bind::bind_ivec2(&lox);
+	bind::bind_render_command(&lox, &animations);
+	bind::bind_font(&lox);
+
+	fyro->define_native_function(
+		"load_font",
+		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			const auto size = ah.require_int();
+			ah.complete();
+			ScriptFont r;
+			r.setup(path, static_cast<float>(size));
+			loaded_fonts.emplace_back(r.font);
+			return lox.make_native(r);
+		}
+	);
+	bind::bind_sprite(&lox);
 	fyro->define_native_function(
 		"load_image",
 		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -1096,95 +1241,9 @@ void ExampleGame::bind_functions()
 			return lox.make_native(r);
 		}
 	);
-	fyro->define_native_class<ScriptPlayer>("Player")
-		.add_native_getter<InputFrame>(
-			"current",
-			[this](const ScriptPlayer& s) { return lox.make_native(s.player->current_frame); }
-		)
-		.add_native_getter<InputFrame>(
-			"last", [this](const ScriptPlayer& s) { return lox.make_native(s.player->last_frame); }
-		)
-		.add_function(
-			"run_haptics",
-			[](ScriptPlayer& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
-			{
-				float force = static_cast<float>(ah.require_float());
-				float life = static_cast<float>(ah.require_float());
-				ah.complete();
-				if (r.player == nullptr)
-				{
-					lox::raise_error("Player not created from input!");
-				}
-				r.player->run_haptics(force, life);
-				return lox::make_nil();
-			}
-		);
-	fyro->define_native_class<ScriptRandom>("Random").add_function(
-		"next_int",
-		[](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
-		{
-			const auto max_value = ah.require_int();
-			ah.complete();
-			const auto value = r.next_int(max_value);
-			return lox::make_number_int(value);
-		}
-	);
-	fyro->define_native_class<InputFrame>("InputFrame")
-		.add_getter<lox::Tf>(
-			"axis_left_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_x); }
-		)
-		.add_getter<lox::Tf>(
-			"axis_left_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_left_y); }
-		)
-		.add_getter<lox::Tf>(
-			"axis_right_x", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_x); }
-		)
-		.add_getter<lox::Tf>(
-			"axis_right_y", [](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_right_y); }
-		)
-		.add_getter<lox::Tf>(
-			"axis_trigger_left",
-			[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_left); }
-		)
-		.add_getter<lox::Tf>(
-			"axis_trigger_right",
-			[](const InputFrame& f) { return static_cast<lox::Tf>(f.axis_trigger_right); }
-		)
-		.add_getter<bool>("button_a", [](const InputFrame& f) { return f.button_a; })
-		.add_getter<bool>("button_b", [](const InputFrame& f) { return f.button_b; })
-		.add_getter<bool>("button_x", [](const InputFrame& f) { return f.button_x; })
-		.add_getter<bool>("button_y", [](const InputFrame& f) { return f.button_y; })
-		.add_getter<bool>("button_back", [](const InputFrame& f) { return f.button_back; })
-		.add_getter<bool>("button_guide", [](const InputFrame& f) { return f.button_guide; })
-		.add_getter<bool>("button_start", [](const InputFrame& f) { return f.button_start; })
-		.add_getter<bool>(
-			"button_leftstick", [](const InputFrame& f) { return f.button_leftstick; }
-		)
-		.add_getter<bool>(
-			"button_rightstick", [](const InputFrame& f) { return f.button_rightstick; }
-		)
-		.add_getter<bool>(
-			"button_leftshoulder", [](const InputFrame& f) { return f.button_leftshoulder; }
-		)
-		.add_getter<bool>(
-			"button_rightshoulder", [](const InputFrame& f) { return f.button_rightshoulder; }
-		)
-		.add_getter<bool>("button_dpad_up", [](const InputFrame& f) { return f.button_dpad_up; })
-		.add_getter<bool>(
-			"button_dpad_down", [](const InputFrame& f) { return f.button_dpad_down; }
-		)
-		.add_getter<bool>(
-			"button_dpad_left", [](const InputFrame& f) { return f.button_dpad_left; }
-		)
-		.add_getter<bool>(
-			"button_dpad_right", [](const InputFrame& f) { return f.button_dpad_right; }
-		)
-		.add_getter<bool>("button_misc1", [](const InputFrame& f) { return f.button_misc1; })
-		.add_getter<bool>("button_paddle1", [](const InputFrame& f) { return f.button_paddle1; })
-		.add_getter<bool>("button_paddle2", [](const InputFrame& f) { return f.button_paddle2; })
-		.add_getter<bool>("button_paddle3", [](const InputFrame& f) { return f.button_paddle3; })
-		.add_getter<bool>("button_paddle4", [](const InputFrame& f) { return f.button_paddle4; })
-		.add_getter<bool>("button_touchpad", [](const InputFrame& f) { return f.button_touchpad; });
+	bind::bind_player(&lox);
+	bind::bind_random(&lox);
+	bind::bind_input_frame(&lox);
 }
 
 void ExampleGame::on_update(float dt)
