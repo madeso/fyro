@@ -36,8 +36,6 @@ on_collision(player: Player, enemy: Enemy) => {
 -   add sound and music
 -   name input so we can assure player1 is the same in meny as in game
 -   change input? to support mouse only games (cpp samples) and dual-stick shooters with "mouselook"
--   change examples to data driven with scripting similar to love2d
--   extend api to something similar to flixel
 -   add hot reload
 -   add data "screenshot" dump of the last x seconds, with debugging, logging, log diff and replayability
 -   get debugging ideas from
