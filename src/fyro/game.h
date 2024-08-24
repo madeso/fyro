@@ -32,7 +32,6 @@ struct ExampleGame : public Game
 	void on_imgui() override;
 
 	void run_main();
-	void bind_named_colors();
 	void bind_collision();
 	void bind_functions();
 

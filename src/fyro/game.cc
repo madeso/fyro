@@ -523,6 +523,46 @@ ScriptSprite load_sprite(
 }
 }  //  namespace script
 
+namespace bind
+{
+void bind_named_colors(lox::Lox* lox)
+{
+	auto rgb = lox->in_package("fyro.rgb");
+	rgb->add_native_getter("white", [lox]() { return lox->make_native(Rgb{255, 255, 255}); });
+	rgb->add_native_getter("light_gray", [lox]() { return lox->make_native(Rgb{160, 160, 160}); });
+	rgb->add_native_getter("gray", [lox]() { return lox->make_native(Rgb{127, 127, 127}); });
+	rgb->add_native_getter("dark_gray", [lox]() { return lox->make_native(Rgb{87, 87, 87}); });
+	rgb->add_native_getter("black", [lox]() { return lox->make_native(Rgb{0, 0, 0}); });
+	rgb->add_native_getter("red", [lox]() { return lox->make_native(Rgb{173, 35, 35}); });
+	rgb->add_native_getter("pure_red", [lox]() { return lox->make_native(Rgb{255, 0, 0}); });
+	rgb->add_native_getter("blue", [lox]() { return lox->make_native(Rgb{42, 75, 215}); });
+	rgb->add_native_getter("pure_blue", [lox]() { return lox->make_native(Rgb{0, 0, 255}); });
+	rgb->add_native_getter("light_blue", [lox]() { return lox->make_native(Rgb{157, 175, 255}); });
+	rgb->add_native_getter("normal_blue", [lox]() { return lox->make_native(Rgb{127, 127, 255}); });
+	rgb->add_native_getter(
+		"cornflower_blue", [lox]() { return lox->make_native(Rgb{100, 149, 237}); }
+	);
+	rgb->add_native_getter("green", [lox]() { return lox->make_native(Rgb{29, 105, 20}); });
+	rgb->add_native_getter("pure_green", [lox]() { return lox->make_native(Rgb{0, 255, 0}); });
+	rgb->add_native_getter("light_green", [lox]() { return lox->make_native(Rgb{129, 197, 122}); });
+	rgb->add_native_getter("yellow", [lox]() { return lox->make_native(Rgb{255, 238, 51}); });
+	rgb->add_native_getter("pure_yellow", [lox]() { return lox->make_native(Rgb{255, 255, 0}); });
+	rgb->add_native_getter("orange", [lox]() { return lox->make_native(Rgb{255, 146, 51}); });
+	rgb->add_native_getter("pure_orange", [lox]() { return lox->make_native(Rgb{255, 127, 0}); });
+	rgb->add_native_getter("brown", [lox]() { return lox->make_native(Rgb{129, 74, 25}); });
+	rgb->add_native_getter("pure_brown", [lox]() { return lox->make_native(Rgb{250, 75, 0}); });
+	rgb->add_native_getter("purple", [lox]() { return lox->make_native(Rgb{129, 38, 192}); });
+	rgb->add_native_getter("pure_purple", [lox]() { return lox->make_native(Rgb{128, 0, 128}); });
+	rgb->add_native_getter("pink", [lox]() { return lox->make_native(Rgb{255, 205, 243}); });
+	rgb->add_native_getter("pure_pink", [lox]() { return lox->make_native(Rgb{255, 192, 203}); });
+	rgb->add_native_getter("pure_beige", [lox]() { return lox->make_native(Rgb{245, 245, 220}); });
+	rgb->add_native_getter("tan", [lox]() { return lox->make_native(Rgb{233, 222, 187}); });
+	rgb->add_native_getter("pure_tan", [lox]() { return lox->make_native(Rgb{210, 180, 140}); });
+	rgb->add_native_getter("cyan", [lox]() { return lox->make_native(Rgb{41, 208, 208}); });
+	rgb->add_native_getter("pure_cyan", [lox]() { return lox->make_native(Rgb{0, 255, 255}); });
+}
+}  //  namespace bind
+
 ExampleGame::ExampleGame()
 	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
 	, texture_cache([](const std::string& path) { return load_texture(path); })
@@ -531,7 +571,7 @@ ExampleGame::ExampleGame()
 	keyboards.mappings.emplace_back(create_default_mapping_for_player1());
 	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
 
-	bind_named_colors();
+	bind::bind_named_colors(&lox);
 	bind_collision();
 	bind_functions();
 }
@@ -573,43 +613,6 @@ void ExampleGame::run_main()
 			return nullptr; \
 		} \
 	} while (false)
-
-void ExampleGame::bind_named_colors()
-{
-	auto rgb = lox.in_package("fyro.rgb");
-	rgb->add_native_getter("white", [&]() { return lox.make_native(Rgb{255, 255, 255}); });
-	rgb->add_native_getter("light_gray", [&]() { return lox.make_native(Rgb{160, 160, 160}); });
-	rgb->add_native_getter("gray", [&]() { return lox.make_native(Rgb{127, 127, 127}); });
-	rgb->add_native_getter("dark_gray", [&]() { return lox.make_native(Rgb{87, 87, 87}); });
-	rgb->add_native_getter("black", [&]() { return lox.make_native(Rgb{0, 0, 0}); });
-	rgb->add_native_getter("red", [&]() { return lox.make_native(Rgb{173, 35, 35}); });
-	rgb->add_native_getter("pure_red", [&]() { return lox.make_native(Rgb{255, 0, 0}); });
-	rgb->add_native_getter("blue", [&]() { return lox.make_native(Rgb{42, 75, 215}); });
-	rgb->add_native_getter("pure_blue", [&]() { return lox.make_native(Rgb{0, 0, 255}); });
-	rgb->add_native_getter("light_blue", [&]() { return lox.make_native(Rgb{157, 175, 255}); });
-	rgb->add_native_getter("normal_blue", [&]() { return lox.make_native(Rgb{127, 127, 255}); });
-	rgb->add_native_getter(
-		"cornflower_blue", [&]() { return lox.make_native(Rgb{100, 149, 237}); }
-	);
-	rgb->add_native_getter("green", [&]() { return lox.make_native(Rgb{29, 105, 20}); });
-	rgb->add_native_getter("pure_green", [&]() { return lox.make_native(Rgb{0, 255, 0}); });
-	rgb->add_native_getter("light_green", [&]() { return lox.make_native(Rgb{129, 197, 122}); });
-	rgb->add_native_getter("yellow", [&]() { return lox.make_native(Rgb{255, 238, 51}); });
-	rgb->add_native_getter("pure_yellow", [&]() { return lox.make_native(Rgb{255, 255, 0}); });
-	rgb->add_native_getter("orange", [&]() { return lox.make_native(Rgb{255, 146, 51}); });
-	rgb->add_native_getter("pure_orange", [&]() { return lox.make_native(Rgb{255, 127, 0}); });
-	rgb->add_native_getter("brown", [&]() { return lox.make_native(Rgb{129, 74, 25}); });
-	rgb->add_native_getter("pure_brown", [&]() { return lox.make_native(Rgb{250, 75, 0}); });
-	rgb->add_native_getter("purple", [&]() { return lox.make_native(Rgb{129, 38, 192}); });
-	rgb->add_native_getter("pure_purple", [&]() { return lox.make_native(Rgb{128, 0, 128}); });
-	rgb->add_native_getter("pink", [&]() { return lox.make_native(Rgb{255, 205, 243}); });
-	rgb->add_native_getter("pure_pink", [&]() { return lox.make_native(Rgb{255, 192, 203}); });
-	rgb->add_native_getter("pure_beige", [&]() { return lox.make_native(Rgb{245, 245, 220}); });
-	rgb->add_native_getter("tan", [&]() { return lox.make_native(Rgb{233, 222, 187}); });
-	rgb->add_native_getter("pure_tan", [&]() { return lox.make_native(Rgb{210, 180, 140}); });
-	rgb->add_native_getter("cyan", [&]() { return lox.make_native(Rgb{41, 208, 208}); });
-	rgb->add_native_getter("pure_cyan", [&]() { return lox.make_native(Rgb{0, 255, 255}); });
-}
 
 void ExampleGame::bind_collision()
 {
