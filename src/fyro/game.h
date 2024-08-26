@@ -38,7 +38,6 @@ struct ExampleGame : public Game
 	void on_imgui() override;
 
 	void run_main();
-	void bind_functions();
 
 	void on_update(float dt) override;
 	void on_render(const render::RenderCommand& rc) override;

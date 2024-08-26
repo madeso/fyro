@@ -1239,12 +1239,23 @@ ExampleGame::ExampleGame()
 	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
 
 	bind::bind_named_colors(&lox);
-
 	bind::bind_phys_actor(&lox);
 	bind::bind_phys_solid(&lox);
 	bind::bind_phys_level(&lox);
-
-	bind_functions();
+	bind::bind_fun_set_state(&lox, &next_state);
+	bind::bind_fun_get_input(&lox, &input);
+	bind::bind_rgb(&lox);
+	bind::bind_ivec2(&lox);
+	bind::bind_render_command(&lox, &animations);
+	bind::bind_font(&lox);
+	bind::bind_fun_load_font(&lox, &loaded_fonts);
+	bind::bind_sprite(&lox);
+	bind::bind_fun_load_image(&lox, &texture_cache);
+	bind::bind_fun_sync_sprite_animations(&lox);
+	bind::bind_fun_load_sprite(&lox, &texture_cache);
+	bind::bind_player(&lox);
+	bind::bind_random(&lox);
+	bind::bind_input_frame(&lox);
 }
 
 void ExampleGame::on_imgui()
@@ -1263,27 +1274,6 @@ void ExampleGame::run_main()
 	{
 		throw Exception{{"Unable to run script"}};
 	}
-}
-
-void ExampleGame::bind_functions()
-{
-	bind::bind_fun_set_state(&lox, &next_state);
-
-	bind::bind_fun_get_input(&lox, &input);
-	bind::bind_rgb(&lox);
-	bind::bind_ivec2(&lox);
-	bind::bind_render_command(&lox, &animations);
-	bind::bind_font(&lox);
-	bind::bind_fun_load_font(&lox, &loaded_fonts);
-
-	bind::bind_sprite(&lox);
-	bind::bind_fun_load_image(&lox, &texture_cache);
-
-	bind::bind_fun_sync_sprite_animations(&lox);
-	bind::bind_fun_load_sprite(&lox, &texture_cache);
-	bind::bind_player(&lox);
-	bind::bind_random(&lox);
-	bind::bind_input_frame(&lox);
 }
 
 void ExampleGame::on_update(float dt)
