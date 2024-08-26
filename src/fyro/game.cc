@@ -1073,104 +1073,9 @@ void bind_sprite(lox::Lox* lox)
 		);
 }
 
-
-}  //  namespace bind
-
-ExampleGame::ExampleGame()
-	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
-	, texture_cache([](const std::string& path) { return load_texture(path); })
+void bind_fun_sync_sprite_animations(lox::Lox* lox)
 {
-	// todo(Gustav): read/write to json and provide ui for adding new mappings
-	keyboards.mappings.emplace_back(create_default_mapping_for_player1());
-	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
-
-	bind::bind_named_colors(&lox);
-
-	bind::bind_phys_actor(&lox);
-	bind::bind_phys_solid(&lox);
-	bind::bind_phys_level(&lox);
-
-	bind_functions();
-}
-
-void ExampleGame::on_imgui()
-{
-	for (auto& f: loaded_fonts)
-	{
-		f->imgui();
-	}
-	input.on_imgui();
-}
-
-void ExampleGame::run_main()
-{
-	const auto src = read_file_to_string("main.lox");
-	if (false == lox.run_string(src))
-	{
-		throw Exception{{"Unable to run script"}};
-	}
-}
-
-void ExampleGame::bind_functions()
-{
-	auto fyro = lox.in_package("fyro");
-
-	fyro->define_native_function(
-		"set_state",
-		[this](lox::Callable*, lox::ArgumentHelper& arguments)
-		{
-			auto instance = arguments.require_instance();
-			arguments.complete();
-			next_state = std::make_unique<ScriptState>(instance, &lox);
-			return lox::make_nil();
-		}
-	);
-
-	fyro->define_native_function(
-		"get_input",
-		[this](lox::Callable*, lox::ArgumentHelper& arguments)
-		{
-			arguments.complete();
-			auto frame = input.capture_player();
-			return lox.make_native<ScriptPlayer>(ScriptPlayer{frame});
-		}
-	);
-
-	bind::bind_rgb(&lox);
-	bind::bind_ivec2(&lox);
-	bind::bind_render_command(&lox, &animations);
-	bind::bind_font(&lox);
-
-	fyro->define_native_function(
-		"load_font",
-		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
-		{
-			const auto path = ah.require_string();
-			const auto size = ah.require_int();
-			ah.complete();
-			ScriptFont r;
-			r.setup(path, static_cast<float>(size));
-			loaded_fonts.emplace_back(r.font);
-			return lox.make_native(r);
-		}
-	);
-	bind::bind_sprite(&lox);
-	fyro->define_native_function(
-		"load_image",
-		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
-		{
-			const auto path = ah.require_string();
-			ah.complete();
-			ScriptSprite r;
-			Sprite s;
-			s.texture = texture_cache.get(path);
-			s.screen = Rectf{
-				static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)
-			};
-			r.sprites.emplace_back(s);
-			return lox.make_native(r);
-		}
-	);
+	auto fyro = lox->in_package("fyro");
 	fyro->define_native_function(
 		"sync_sprite_animations",
 		[](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -1224,9 +1129,89 @@ void ExampleGame::bind_functions()
 			return lox::make_nil();
 		}
 	);
+}
+
+void bind_fun_set_state(lox::Lox* lox, std::unique_ptr<State>* next_state)
+{
+	auto fyro = lox->in_package("fyro");
+
+	fyro->define_native_function(
+		"set_state",
+		[lox, next_state](lox::Callable*, lox::ArgumentHelper& arguments)
+		{
+			auto instance = arguments.require_instance();
+			arguments.complete();
+			*next_state = std::make_unique<ScriptState>(instance, lox);
+			return lox::make_nil();
+		}
+	);
+}
+
+void bind_fun_get_input(lox::Lox* lox, Input* input)
+{
+	auto fyro = lox->in_package("fyro");
+
+	fyro->define_native_function(
+		"get_input",
+		[lox, input](lox::Callable*, lox::ArgumentHelper& arguments)
+		{
+			arguments.complete();
+			auto frame = input->capture_player();
+			return lox->make_native<ScriptPlayer>(ScriptPlayer{frame});
+		}
+	);
+}
+
+void bind_fun_load_font(lox::Lox* lox, FontCache* loaded_fonts)
+{
+	auto fyro = lox->in_package("fyro");
+
+	fyro->define_native_function(
+		"load_font",
+		[lox, loaded_fonts](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			const auto size = ah.require_int();
+			ah.complete();
+			ScriptFont r;
+			r.setup(path, static_cast<float>(size));
+			loaded_fonts->emplace_back(r.font);
+			return lox->make_native(r);
+		}
+	);
+}
+
+void bind_fun_load_image(lox::Lox* lox, TextureCache* texture_cache)
+{
+	auto fyro = lox->in_package("fyro");
+
+	fyro->define_native_function(
+		"load_image",
+		[lox,
+		 texture_cache](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		{
+			const auto path = ah.require_string();
+			ah.complete();
+			ScriptSprite r;
+			Sprite s;
+			s.texture = texture_cache->get(path);
+			s.screen = Rectf{
+				static_cast<float>(s.texture->width), static_cast<float>(s.texture->height)
+			};
+			r.sprites.emplace_back(s);
+			return lox->make_native(r);
+		}
+	);
+}
+
+void bind_fun_load_sprite(lox::Lox* lox, TextureCache* texture_cache)
+{
+	auto fyro = lox->in_package("fyro");
+
 	fyro->define_native_function(
 		"load_sprite",
-		[this](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+		[lox,
+		 texture_cache](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
 			const auto path = ah.require_string();
 			const auto tiles_per_x = static_cast<int>(ah.require_int());
@@ -1236,11 +1221,66 @@ void ExampleGame::bind_functions()
 			ah.complete();
 
 			auto r = script::load_sprite(
-				path, texture_cache, tiles_per_x, tiles_per_y, anim_speed, tiles_array
+				path, *texture_cache, tiles_per_x, tiles_per_y, anim_speed, tiles_array
 			);
-			return lox.make_native(r);
+			return lox->make_native(r);
 		}
 	);
+}
+
+}  //  namespace bind
+
+ExampleGame::ExampleGame()
+	: lox(std::make_unique<PrintLoxError>(), [](const std::string& str) { LOG_INFO("> {0}", str); })
+	, texture_cache([](const std::string& path) { return load_texture(path); })
+{
+	// todo(Gustav): read/write to json and provide ui for adding new mappings
+	keyboards.mappings.emplace_back(create_default_mapping_for_player1());
+	input.add_keyboard(std::make_shared<InputDevice_Keyboard>(&keyboards, 0));
+
+	bind::bind_named_colors(&lox);
+
+	bind::bind_phys_actor(&lox);
+	bind::bind_phys_solid(&lox);
+	bind::bind_phys_level(&lox);
+
+	bind_functions();
+}
+
+void ExampleGame::on_imgui()
+{
+	for (auto& f: loaded_fonts)
+	{
+		f->imgui();
+	}
+	input.on_imgui();
+}
+
+void ExampleGame::run_main()
+{
+	const auto src = read_file_to_string("main.lox");
+	if (false == lox.run_string(src))
+	{
+		throw Exception{{"Unable to run script"}};
+	}
+}
+
+void ExampleGame::bind_functions()
+{
+	bind::bind_fun_set_state(&lox, &next_state);
+
+	bind::bind_fun_get_input(&lox, &input);
+	bind::bind_rgb(&lox);
+	bind::bind_ivec2(&lox);
+	bind::bind_render_command(&lox, &animations);
+	bind::bind_font(&lox);
+	bind::bind_fun_load_font(&lox, &loaded_fonts);
+
+	bind::bind_sprite(&lox);
+	bind::bind_fun_load_image(&lox, &texture_cache);
+
+	bind::bind_fun_sync_sprite_animations(&lox);
+	bind::bind_fun_load_sprite(&lox, &texture_cache);
 	bind::bind_player(&lox);
 	bind::bind_random(&lox);
 	bind::bind_input_frame(&lox);

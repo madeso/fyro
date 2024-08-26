@@ -17,6 +17,10 @@ struct State
 };
 
 using AnimationsArray = std::vector<std::shared_ptr<SpriteAnimation>>;
+using TextureCache = Cache<std::string, render::Texture>;
+
+// todo(Gustav): replace with actual cache
+using FontCache = std::vector<std::shared_ptr<render::Font>>;
 
 struct ExampleGame : public Game
 {
@@ -25,8 +29,8 @@ struct ExampleGame : public Game
 	Input input;
 	std::unique_ptr<State> next_state;
 	std::unique_ptr<State> state;
-	std::vector<std::shared_ptr<render::Font>> loaded_fonts;  // todo(Gustav): replace with cache
-	Cache<std::string, render::Texture> texture_cache;
+	FontCache loaded_fonts;
+	TextureCache texture_cache;
 	AnimationsArray animations;
 
 	ExampleGame();
