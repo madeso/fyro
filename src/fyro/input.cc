@@ -393,6 +393,7 @@ void InputDevice_Keyboard::update(float)
 
 void InputDevice_Keyboard::on_imgui()
 {
+	ImGui::Text("Keyboard %zu", index);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -477,7 +478,7 @@ void InputDevice_Gamecontroller::update(float dt)
 
 void InputDevice_Gamecontroller::on_imgui()
 {
-	ImGui::TextUnformatted(name.c_str());
+	ImGui::Text("Game controller: %s", name.c_str());
 	haptics.on_imgui();
 }
 
@@ -492,12 +493,102 @@ Player::~Player()
 	}
 }
 
+namespace
+{
+void imgui_frame(const InputFrame& frame)
+{
+#define FLOAT(f) \
+	do \
+	{ \
+		float ff = frame.axis_##f; \
+		ImGui::SliderFloat(#f, &ff, -1.0f, 1.0f); \
+	} while (false)
+#define BOOL(b) \
+	do \
+	{ \
+		bool bb = frame.button_##b; \
+		ImGui::Checkbox(#b, &bb); \
+	} while (false)
+	FLOAT(left_x);
+	FLOAT(left_y);
+	FLOAT(right_x);
+	FLOAT(right_y);
+
+	FLOAT(trigger_left);
+	FLOAT(trigger_right);
+
+	BOOL(a);
+	ImGui::SameLine();
+	BOOL(b);
+	ImGui::SameLine();
+	BOOL(x);
+	ImGui::SameLine();
+	BOOL(y);
+
+	BOOL(back);
+	ImGui::SameLine();
+	BOOL(guide);
+	ImGui::SameLine();
+	BOOL(start);
+
+	BOOL(leftstick);
+	ImGui::SameLine();
+	BOOL(rightstick);
+
+	BOOL(leftshoulder);
+	ImGui::SameLine();
+	BOOL(rightshoulder);
+
+	BOOL(dpad_up);
+	ImGui::SameLine();
+	BOOL(dpad_down);
+	ImGui::SameLine();
+	BOOL(dpad_left);
+	ImGui::SameLine();
+	BOOL(dpad_right);
+
+	BOOL(misc1);
+
+	BOOL(paddle1);
+	ImGui::SameLine();
+	BOOL(paddle2);
+	ImGui::SameLine();
+	BOOL(paddle3);
+	ImGui::SameLine();
+	BOOL(paddle4);
+
+	BOOL(touchpad);
+#undef FLOAT
+#undef BOOL
+}
+}  //  namespace
+
 void Player::on_imgui()
 {
 	if (device)
 	{
 		ImGui::Begin("player");
-		device->on_imgui();
+
+		const auto flags = ImGuiTreeNodeFlags_SpanFullWidth;
+
+		if (ImGui::TreeNodeEx("Device", flags | ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			device->on_imgui();
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Current frame", flags))
+		{
+			imgui_frame(current_frame);
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Last frame", flags))
+		{
+			imgui_frame(last_frame);
+			ImGui::TreePop();
+		}
+
 		ImGui::End();
 	}
 }
