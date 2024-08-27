@@ -35,6 +35,13 @@ set(src_base
 	fyro/sprite.cc fyro/sprite.h
 	fyro/game.cc fyro/game.h
 
+	fyro/rendertypes.h
+	fyro/bind.h
+	fyro/bind.colors.cc fyro/bind.colors.h 
+	fyro/bind.physics.cc fyro/bind.physics.h
+	fyro/bind.input.cc fyro/bind.input.h 
+	fyro/bind.render.cc fyro/bind.render.h
+
 	fyro/collision2.cc fyro/collision2.h
 	fyro/tiles.cc fyro/tiles.h
 

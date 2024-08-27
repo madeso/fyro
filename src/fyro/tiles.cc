@@ -14,7 +14,6 @@
 #include "fyro/render/render2.h"
 #include "fyro/rect.h"
 
-std::shared_ptr<render::Texture> load_texture(const std::string& path);
 
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>

@@ -7,6 +7,7 @@
 #include "fyro/cint.h"
 #include "fyro/dependencies/dependency_opengl.h"
 #include "fyro/log.h"
+#include "fyro/vfs.h"
 
 namespace render
 {
@@ -185,3 +186,15 @@ Texture load_image_from_color(u32 pixel, TextureEdge te, TextureRenderStyle trs,
 }
 
 }  //  namespace render
+
+std::shared_ptr<render::Texture> load_texture(const std::string& path)
+{
+	const auto bytes = read_file_to_bytes(path);
+	return std::make_shared<render::Texture>(render::load_image_from_bytes(
+		reinterpret_cast<const unsigned char*>(bytes.data()),
+		static_cast<int>(bytes.size()),
+		render::TextureEdge::repeat,
+		render::TextureRenderStyle::pixel,
+		render::Transparency::include
+	));
+}

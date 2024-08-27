@@ -73,3 +73,5 @@ Texture load_image_from_color(u32 pixel, TextureEdge te, TextureRenderStyle trs,
 
 
 }  //  namespace render
+
+std::shared_ptr<render::Texture> load_texture(const std::string& path);
