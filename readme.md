@@ -47,7 +47,7 @@ on_collision(player: Player, enemy: Enemy) => {
 -   add support for both pixel and rotate phsycis games
 -   add gif/mp4 recording of the last X seconds
 
--   port flixel samples?
+-   port flixel samples? like mode https://github.com/HaxeFlixel/flixel-demos/tree/dd0afb866ed57b0507e8679d191ce68d4a8e2407/Platformers/Mode https://github.com/AdamAtomic/Mode
 -   port to webgl, android, raspberry pi
 -   port gamejam games for more samples
 -   port "16 games in c++ sfml" for more samples?
