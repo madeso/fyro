@@ -149,10 +149,12 @@ class Player : Actor
 			{
 				this.input.run_haptics(1.0, 0.2);
 				// print this.dy;
+				this.flicker(1.0, 0.03);
 			}
 			else if(this.dy < -105)
 			{
 				this.input.run_haptics(0.25, 0.2);
+				this.flicker(0.5, 0.03);
 				// print this.dy;
 			}
 			this.dy = 0;

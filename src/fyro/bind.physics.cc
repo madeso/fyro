@@ -8,11 +8,56 @@
 
 // todo(Gustav): rework this...
 #include "fyro/bind.render.h"
+#include "fyro/bind.h"
 
 int to_int(lox::Ti ti)
 {
 	return static_cast<int>(ti);
 }
+
+struct ActiveFlicker
+{
+	float duration;
+	float interval;
+	float dt;
+};
+
+struct FlickerStatus
+{
+	bool is_visible = true;
+	std::optional<ActiveFlicker> active_flicker;
+
+	void update(float dt)
+	{
+		if (! active_flicker) return;
+
+		active_flicker->duration -= dt;
+		if (active_flicker->duration <= 0)
+		{
+			active_flicker = std::nullopt;
+			is_visible = true;
+			// todo(Gustav): call callback if defined
+			return;
+		}
+		active_flicker->dt += dt;
+		while (active_flicker->dt >= active_flicker->interval)
+		{
+			active_flicker->dt -= active_flicker->interval;
+			is_visible = ! is_visible;
+		}
+	}
+
+	void start_flicker(float duration, float interval)
+	{
+		ActiveFlicker a;
+		a.duration = duration;
+		a.interval = interval;
+		a.dt = 0;
+
+		// todo(Gustav): call callback if defined?
+		active_flicker = a;
+	}
+};
 
 // c++ wrappers over the specific lox class
 
@@ -24,6 +69,8 @@ struct ScriptActor
 	std::shared_ptr<lox::Callable> on_render;
 	std::shared_ptr<lox::Callable> on_get_squished;
 
+	FlickerStatus flicker;
+
 	ScriptActor(std::shared_ptr<lox::Instance> in)
 		: instance(in)
 	{
@@ -34,6 +81,8 @@ struct ScriptActor
 
 	void update(float dt)
 	{
+		flicker.update(dt);
+
 		if (on_update)
 		{
 			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
@@ -42,6 +91,12 @@ struct ScriptActor
 
 	void render(std::shared_ptr<lox::Object> rc)
 	{
+		if (flicker.is_visible == false)
+		{
+			// todo(Gustav): should we call render with a dummy arg or set a state to keep animating?
+			return;
+		}
+
 		if (on_render)
 		{
 			on_render->call({{rc}});
@@ -267,6 +322,20 @@ void bind_phys_actor(lox::Lox* lox)
 				ah.complete();
 				auto r = x.impl->move_y(dist, fyro::no_collision_reaction);
 				return lox::make_bool(r);
+			}
+		)
+		.add_function(
+			"flicker",
+			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto duration = static_cast<float>(ah.require_float());
+				const auto interval
+					= static_cast<float>(ah.require_float());  // todo(Gustav): expand with optional
+				ah.complete();
+				LOX_ERROR(duration > 0, "duration must be larger than 0");
+				LOX_ERROR(interval > 0, "interval must be larger than 0");
+				x.impl->dispatcher->flicker.start_flicker(duration, interval);
+				return lox::make_nil();
 			}
 		)
 		.add_property<lox::Ti>(
