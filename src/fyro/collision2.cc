@@ -44,16 +44,16 @@ void Level::update(float dt)
 	}
 }
 
-void Level::render(std::shared_ptr<lox::Object> arg)
+void Level::render(RenderData* data, std::shared_ptr<lox::Object> arg)
 {
 	for (auto& solid: solids)
 	{
-		solid->render(arg);
+		solid->render(data, arg);
 	}
 
 	for (auto& actor: actors)
 	{
-		actor->render(arg);
+		actor->render(data, arg);
 	}
 }
 

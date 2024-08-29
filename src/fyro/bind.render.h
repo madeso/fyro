@@ -13,6 +13,7 @@ struct RenderData
 	const render::RenderCommand& rc;
 	std::optional<render::RenderLayer2> layer;
 	glm::vec2 focus;
+	bool visible;
 
 	explicit RenderData(const render::RenderCommand& rr);
 	~RenderData();

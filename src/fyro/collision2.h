@@ -9,6 +9,8 @@
 #include "fyro/rect.h"
 #include "lox/object.h"
 
+struct RenderData;
+
 namespace fyro
 {
 
@@ -38,7 +40,7 @@ struct Level
 	void register_collision(Actor* lhs, Actor* rhs);
 
 	void update(float dt);
-	void render(std::shared_ptr<lox::Object> arg);
+	void render(RenderData* data, std::shared_ptr<lox::Object> arg);
 };
 
 struct ActorList
@@ -82,7 +84,7 @@ struct Actor : Aabb
 	bool collide_at(const glm::ivec2& new_position);
 
 	virtual void update(float dt) = 0;
-	virtual void render(std::shared_ptr<lox::Object> arg) = 0;
+	virtual void render(RenderData* data, std::shared_ptr<lox::Object> arg) = 0;
 
 	/*
 	Typically, an Actor is riding a Solid if that Actor is immediately above the Solid.
@@ -113,7 +115,7 @@ struct Solid : Aabb
 	bool is_collidable = true;
 
 	virtual void update(float dt) = 0;
-	virtual void render(std::shared_ptr<lox::Object> arg) = 0;
+	virtual void render(RenderData* data, std::shared_ptr<lox::Object> arg) = 0;
 
 	ActorList get_all_riding_actors();
 

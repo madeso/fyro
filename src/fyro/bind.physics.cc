@@ -89,18 +89,22 @@ struct ScriptActor
 		}
 	}
 
-	void render(std::shared_ptr<lox::Object> rc)
+	void render(RenderData* data, std::shared_ptr<lox::Object> rc)
 	{
+		const auto visible = data->visible;
+
 		if (flicker.is_visible == false)
 		{
-			// todo(Gustav): should we call render with a dummy arg or set a state to keep animating?
-			return;
+			// tell it to stop rendering
+			data->visible = false;
 		}
 
 		if (on_render)
 		{
 			on_render->call({{rc}});
 		}
+
+		data->visible = visible;
 	}
 
 	bool is_riding_solid(fyro::Solid*)
@@ -181,10 +185,10 @@ struct ScriptActorImpl : fyro::Actor
 		dispatcher->update(dt);
 	}
 
-	void render(std::shared_ptr<lox::Object> rc) override
+	void render(RenderData* data, std::shared_ptr<lox::Object> rc) override
 	{
 		assert(dispatcher);
-		dispatcher->render(rc);
+		dispatcher->render(data, rc);
 	}
 };
 
@@ -198,7 +202,7 @@ struct ScriptSolidImpl : fyro::Solid
 		dispatcher->update(dt);
 	}
 
-	void render(std::shared_ptr<lox::Object> rc) override
+	void render(RenderData*, std::shared_ptr<lox::Object> rc) override
 	{
 		assert(dispatcher);
 		dispatcher->render(rc);
@@ -233,7 +237,7 @@ struct FixedSolid : fyro::Solid
 	{
 	}
 
-	void render(std::shared_ptr<lox::Object>) override
+	void render(RenderData*, std::shared_ptr<lox::Object>) override
 	{
 	}
 };
@@ -291,7 +295,7 @@ namespace script
 void render_level(ScriptLevelData* level, lox::NativeRef<RenderArg> rend)
 {
 	level->tiles.render(*rend->data->layer->batch, rend->data->layer->viewport_aabb_in_worldspace);
-	level->level.render(rend.instance);
+	level->level.render(rend->data.get(), rend.instance);
 }
 
 }  //  namespace script

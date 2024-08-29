@@ -10,6 +10,7 @@
 RenderData::RenderData(const render::RenderCommand& rr)
 	: rc(rr)
 	, focus(0, 0)
+	, visible(true)
 {
 }
 
@@ -91,6 +92,7 @@ std::vector<render::TextCommand> TextCommand_vector_from_array(lox::Array* scrip
 }
 
 void draw_sprite(
+	bool visible,
 	render::RenderLayer2& layer,
 	std::vector<std::shared_ptr<SpriteAnimation>>& animations,
 	ScriptSprite* texture,
@@ -106,7 +108,10 @@ void draw_sprite(
 
 	const auto tint = glm::vec4(1.0f);
 	const auto screen = Rectf{sprite.screen}.translate(x, y);
-	layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
+	if (visible)
+	{
+		layer.batch->quadf(sprite.texture.get(), screen, sprite.uv, flip_x, tint);
+	}
 }
 
 std::vector<glm::ivec2> to_vec2i_array(std::shared_ptr<lox::Array> src)
@@ -236,13 +241,16 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 
 				render::RenderLayer2& layer = *data->layer;
 
-				layer.batch->quadf(
-					{},
-					layer.viewport_aabb_in_worldspace.translate(data->focus),
-					{},
-					false,
-					{color->r, color->g, color->b, 1.0f}
-				);
+				if (r.data->visible)
+				{
+					layer.batch->quadf(
+						{},
+						layer.viewport_aabb_in_worldspace.translate(data->focus),
+						{},
+						false,
+						{color->r, color->g, color->b, 1.0f}
+					);
+				}
 				return lox::make_nil();
 			}
 		)
@@ -267,13 +275,16 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 
 				render::RenderLayer2& layer = *data->layer;
 
-				layer.batch->quadf(
-					{},
-					Rect{width, height}.translate(x, y),
-					{},
-					false,
-					{color->r, color->g, color->b, 1.0f}
-				);
+				if (r.data->visible)
+				{
+					layer.batch->quadf(
+						{},
+						Rect{width, height}.translate(x, y),
+						{},
+						false,
+						{color->r, color->g, color->b, 1.0f}
+					);
+				}
 				return lox::make_nil();
 			}
 		)
@@ -296,10 +307,14 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 				LOX_ERROR(data, "must be called inside State.render()");
 				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
-				render::RenderLayer2& layer = *data->layer;
+				if (r.data->visible)
+				{
+					render::RenderLayer2& layer = *data->layer;
 
-				const auto commands = script::TextCommand_vector_from_array(script_commands.get());
-				font->font->print(layer.batch, height, x, y, commands);
+					const auto commands
+						= script::TextCommand_vector_from_array(script_commands.get());
+					font->font->print(layer.batch, height, x, y, commands);
+				}
 
 				return lox::make_nil();
 			}
@@ -322,7 +337,9 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 				LOX_ERROR(data, "must be called inside State.render()");
 				LOX_ERROR(data->layer, "need to setup virtual render area first");
 
-				script::draw_sprite(*data->layer, *animations, texture.get_ptr(), x, y, flip_x);
+				script::draw_sprite(
+					r.data->visible, *data->layer, *animations, texture.get_ptr(), x, y, flip_x
+				);
 
 				return lox::make_nil();
 			}
