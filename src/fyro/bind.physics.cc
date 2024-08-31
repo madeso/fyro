@@ -305,9 +305,8 @@ namespace bind
 
 void bind_phys_actor(lox::Lox* lox)
 {
-	// todo(Gustav): expand script to allow inherit from namespace.Class
-	lox->in_global_scope()
-		->define_native_class<ScriptActorBase>("Actor")
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<ScriptActorBase>("Actor")
 		.add_function(
 			"move_x",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
@@ -386,8 +385,8 @@ void bind_phys_actor(lox::Lox* lox)
 
 void bind_phys_solid(lox::Lox* lox)
 {
-	lox->in_global_scope()
-		->define_native_class<ScriptSolidBase>("Solid")
+	auto fyro = lox->in_package("fyro");
+	fyro->define_native_class<ScriptSolidBase>("Solid")
 		.add_function(
 			"move",
 			[](ScriptSolidBase& s, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>

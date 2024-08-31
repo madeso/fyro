@@ -81,7 +81,7 @@ class PlayerAnim
 
 var pinkman = new PlayerAnim("Pink Man");
 
-class Player : Actor
+class Player : fyro.Actor
 {
 	var input;
 	var dx = 0;
