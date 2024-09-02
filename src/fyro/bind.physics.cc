@@ -9,6 +9,7 @@
 // todo(Gustav): rework this...
 #include "fyro/bind.render.h"
 #include "fyro/bind.h"
+#include <tmxlite/Map.hpp>
 
 int to_int(lox::Ti ti)
 {

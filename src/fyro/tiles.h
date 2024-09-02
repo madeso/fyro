@@ -3,10 +3,10 @@
 #include <memory>
 #include <optional>
 
-#include "tmxlite/Map.hpp"
-
 #include "fyro/render/render2.h"
 #include "fyro/rect.h"
+
+namespace tmx { class Map; }
 
 struct MapImpl;
 
