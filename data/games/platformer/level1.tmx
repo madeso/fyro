@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.9" tiledversion="1.9.2" orientation="orthogonal" renderorder="right-down" width="50" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="2" nextobjectid="1">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="50" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="11">
  <tileset firstgid="1" name="Terrain (16x16)" tilewidth="16" tileheight="16" tilecount="242" columns="22">
   <image source="gfx/Terrain/Terrain (16x16).png" width="352" height="176"/>
   <tile id="0">
@@ -777,6 +777,12 @@
    </wangset>
   </wangsets>
  </tileset>
+ <tileset firstgid="243" name="Player" tilewidth="32" tileheight="32" tilecount="11" columns="11">
+  <image source="gfx/Main Characters/Pink Man/Idle (32x32).png" width="352" height="32"/>
+ </tileset>
+ <tileset firstgid="254" name="Strawberry" tilewidth="32" tileheight="32" tilecount="17" columns="17">
+  <image source="gfx/Items/Fruits/Strawberry.png" width="544" height="32"/>
+ </tileset>
  <layer id="1" name="Tile Layer 1" width="50" height="15">
   <data encoding="csv">
 4,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,5,
@@ -796,4 +802,15 @@
 24,24,24,24,24,24,24,24,24,24,24,26,2,2,2,2,2,2,2,2,2,2,27,24,24,24,24,24,24,24,24,221,223,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
 </data>
  </layer>
+ <objectgroup id="2" name="Items">
+  <object id="1" gid="243" x="496" y="96" width="32" height="32"/>
+  <object id="2" gid="254" x="640" y="96" width="32" height="32"/>
+  <object id="3" gid="254" x="672" y="96" width="32" height="32"/>
+  <object id="4" gid="254" x="704" y="96" width="32" height="32"/>
+  <object id="5" gid="254" x="256" y="96" width="32" height="32"/>
+  <object id="6" gid="254" x="288" y="96" width="32" height="32"/>
+  <object id="7" gid="254" x="64" y="80" width="32" height="32"/>
+  <object id="8" gid="254" x="96" y="80" width="32" height="32"/>
+  <object id="9" gid="254" x="144" y="96" width="32" height="32"/>
+ </objectgroup>
 </map>

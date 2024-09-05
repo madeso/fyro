@@ -12,13 +12,14 @@ struct ScriptLevelData
 {
 	fyro::Level level;
 	Map tiles;
-};
 
+	std::map<std::string, std::shared_ptr<lox::Callable>> from_tileset;
+};
 
 struct ScriptLevel
 {
 	std::shared_ptr<ScriptLevelData> data;
-	
+
 	ScriptLevel();
 	void load_tmx(const std::string& path);
 	void add_actor(std::shared_ptr<lox::Instance> x);

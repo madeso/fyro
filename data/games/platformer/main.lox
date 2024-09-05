@@ -224,9 +224,19 @@ class GameState
 		this.start();
 	}
 
+	fun add_strawberry_to_level(x, y)
+	{
+		// todo(Gustav): add multiple arguments and/or formatting to print function
+		print("Adding starberry to level");
+		print(x);
+		print(y);
+	}
+
 	fun start()
 	{
 		this.level = new fyro.Level();
+		// todo(Gustav): setup player object loader
+		this.level.add_loader_from_tileset("Strawberry", this.add_strawberry_to_level);
 		this.level.load_tmx("level1.tmx");
 		this.player = new Player();
 		this.level.add(this.player);

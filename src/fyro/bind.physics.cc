@@ -2,6 +2,7 @@
 
 #include "lox/lox.h"
 
+#include "fyro/log.h"
 #include "fyro/vfs.h"
 #include "fyro/io.h"
 #include "fyro/exception.h"
@@ -270,6 +271,69 @@ void ScriptLevel::load_tmx(const std::string& path)
 
 		data->level.solids.emplace_back(solid);
 	}
+
+	// get objects, parse registrered loaders, warn for errors/mismatches
+
+	const auto& layer_array = map.getLayers();
+	for (const auto& layer: layer_array)
+	{
+		if (layer->getType() != tmx::Layer::Type::Object) continue;
+		const auto* object_group = static_cast<const tmx::ObjectGroup*>(layer.get());
+
+		// todo(Gustav): move the printing code to a dear imgui inspector
+		// LOG_INFO("Found layer {0}", object_group->getName());
+		// const auto& props_array = object_group->getProperties();
+		// for (const auto& prop: props_array)
+		// {
+		// 	LOG_INFO("Prop {0}", prop.getName());
+		// }
+
+		const auto& tileset_array = map.getTilesets();
+		// for (const auto& tileset: tileset_array)
+		// {
+		// 	LOG_INFO(
+		// 		"Found tileset {0}: {1}-{2}",
+		// 		tileset.getName(),
+		// 		tileset.getFirstGID(),
+		// 		tileset.getLastGID()
+		// 	);
+		// }
+
+		const auto& obj_array = object_group->getObjects();
+		for (const auto& obj: obj_array)
+		{
+			std::size_t tileset_index = 0;
+			for (std::size_t search_index = 0; search_index < tileset_array.size();
+				 search_index += 1)
+			{
+				if (obj.getTileID() < tileset_array[search_index].getFirstGID()) break;
+				tileset_index = search_index;
+			}
+
+			const auto from_tileset_found
+				= data->from_tileset.find(tileset_array[tileset_index].getName());
+			if (from_tileset_found != data->from_tileset.end())
+			{
+				const auto pos = obj.getPosition();
+				const auto px = lox::make_number_float(static_cast<double>(pos.x));
+				const auto py = lox::make_number_float(static_cast<double>(pos.y));
+				from_tileset_found->second->call({{px, py}});
+			}
+			else
+			{
+				// todo(Gustav): provide a detailed error of possible matches and badly spelled names
+				LOG_WARNING(
+					"Found object called '{2}' #{0} of type '{1}' with tile #{3} from tileset #{4} '{5}' with no callback",
+					obj.getUID(),
+					obj.getType(),
+					obj.getName(),
+					obj.getTileID(),
+					tileset_index,
+					tileset_array[tileset_index].getName()
+				);
+			}
+		}
+	}
 }
 
 void ScriptLevel::add_actor(std::shared_ptr<lox::Instance> x)
@@ -449,6 +513,17 @@ void bind_phys_level(lox::Lox* lox)
 				auto path = ah.require_string();
 				ah.complete();
 				r.load_tmx(path);
+				return lox::make_nil();
+			}
+		)
+		.add_function(
+			"add_loader_from_tileset",
+			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			{
+				const auto name = ah.require_string();
+				const auto callback = ah.require_callable();
+				ah.complete();
+				r.data->from_tileset[name] = callback;
 				return lox::make_nil();
 			}
 		)
