@@ -272,6 +272,8 @@ void ScriptLevel::load_tmx(const std::string& path)
 		data->level.solids.emplace_back(solid);
 	}
 
+	const auto map_height = static_cast<int>(map.getBounds().height);
+
 	// get objects, parse registrered loaders, warn for errors/mismatches
 
 	const auto& layer_array = map.getLayers();
@@ -310,13 +312,17 @@ void ScriptLevel::load_tmx(const std::string& path)
 				tileset_index = search_index;
 			}
 
-			const auto from_tileset_found
-				= data->from_tileset.find(tileset_array[tileset_index].getName());
+			const auto tileset_name = tileset_array[tileset_index].getName();
+			const auto from_tileset_found = data->from_tileset.find(tileset_name);
 			if (from_tileset_found != data->from_tileset.end())
 			{
 				const auto pos = obj.getPosition();
-				const auto px = lox::make_number_float(static_cast<double>(pos.x));
-				const auto py = lox::make_number_float(static_cast<double>(pos.y));
+				// todo(Gustav): why are x and y doubles? shouldn't they be integers?
+				const auto fpx = static_cast<int>(pos.x);
+				const auto fpy = static_cast<int>(pos.y);
+				// LOG_INFO("Spawning {0} at {1} {2}", tileset_name, fpx, fpy);
+				const auto px = lox::make_number_int(fpx);
+				const auto py = lox::make_number_int(map_height - fpy);
 				from_tileset_found->second->call({{px, py}});
 			}
 			else
@@ -329,7 +335,7 @@ void ScriptLevel::load_tmx(const std::string& path)
 					obj.getName(),
 					obj.getTileID(),
 					tileset_index,
-					tileset_array[tileset_index].getName()
+					tileset_name
 				);
 			}
 		}

@@ -1,7 +1,13 @@
 var random = new fyro.Random();
 var BLOCK_SIZE = 50;
 var GAME_SIZE = 200;
+
+// todo(Gustav): rename, this is player height
 var PLAYER_SIZE = 22;
+
+// todo(Gustav): define a constant here called sprite size
+// var SPRITE_SIZE = 32;
+
 var RUN_TIMER = 0.1;
 var MAX_SLIDE = -20;
 var ACCELERATION = 3;
@@ -96,10 +102,6 @@ class Player : fyro.Actor
 	{
 		super();
 		this.set_lrud(-7, 7, PLAYER_SIZE, 0);
-
-		// hope we don't collide here
-		this.x = 100;
-		this.y = 175;
 	}
 
 	fun update(dt)
@@ -232,14 +234,28 @@ class GameState
 		print(y);
 	}
 
+	fun add_player_to_level(x, y)
+	{
+		this.player = new Player();
+		// 32/2 here is due to center alignment
+		this.player.x = x + 16; // todo(Gustav): add casting, this is player sprite size(32) / 2
+		this.player.y = y;
+		this.level.add(this.player);
+	}
+
 	fun start()
 	{
+		// todo(Gustav): replace nil with null
+		this.player = nil;
 		this.level = new fyro.Level();
 		// todo(Gustav): setup player object loader
 		this.level.add_loader_from_tileset("Strawberry", this.add_strawberry_to_level);
+		this.level.add_loader_from_tileset("Player", this.add_player_to_level);
 		this.level.load_tmx("level1.tmx");
-		this.player = new Player();
-		this.level.add(this.player);
+		if(this.player != nil)
+		{
+			print("Player spawn is missing in level");
+		}
 	}
 
 	fun update(dt)
