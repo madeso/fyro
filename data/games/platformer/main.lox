@@ -85,6 +85,33 @@ class PlayerAnim
 	}
 }
 
+class Fruit : fyro.Actor
+{
+	var sprite;
+
+	fun init(sprite, x, y)
+	{
+		// todo(Gustav): load sprites once and expose a clone function
+		this.sprite = fyro.load_sprite("gfx/Items/Fruits/" + sprite + ".png", 17, 1, 0.05, []);
+		this.sprite.set_size(32, 32);
+		this.sprite.align(0.5, 0.5);
+		super();
+		var size = 7;
+		this.x = x;
+		this.y = y;
+		this.set_lrud(-size, size, size, -size);
+	}
+
+	fun update(dt)
+	{
+	}
+
+	fun render(cmd)
+	{
+		cmd.sprite(this.sprite, this.x, this.y, false, false);
+	}
+}
+
 var pinkman = new PlayerAnim("Pink Man");
 
 class Player : fyro.Actor
@@ -232,6 +259,8 @@ class GameState
 		print("Adding starberry to level");
 		print(x);
 		print(y);
+		var fruit = new Fruit("Strawberry", x + 16, y + 16);
+		this.level.add(fruit);
 	}
 
 	fun add_player_to_level(x, y)
@@ -248,7 +277,6 @@ class GameState
 		// todo(Gustav): replace nil with null
 		this.player = nil;
 		this.level = new fyro.Level();
-		// todo(Gustav): setup player object loader
 		this.level.add_loader_from_tileset("Strawberry", this.add_strawberry_to_level);
 		this.level.add_loader_from_tileset("Player", this.add_player_to_level);
 		this.level.load_tmx("level1.tmx");
