@@ -21,7 +21,7 @@ struct ScriptLevel
 	std::shared_ptr<ScriptLevelData> data;
 
 	ScriptLevel();
-	void load_tmx(const std::string& path);
+	void load_tmx(lox::Lox* lox, const std::string& path);
 	void add_actor(std::shared_ptr<lox::Instance> x);
 	void add_solid(std::shared_ptr<lox::Instance> x);
 };

@@ -73,7 +73,7 @@ void look_at(RenderData* r_data, ScriptLevelData* level_data, float focusx, floa
 			: focus_float;
 }
 
-std::vector<render::TextCommand> TextCommand_vector_from_array(lox::Array* script_commands)
+std::vector<render::TextCommand> TextCommand_vector_from_array(lox::Interpreter* inter, lox::Array* script_commands)
 {
 	std::vector<render::TextCommand> commands;
 	for (auto& obj: script_commands->values)
@@ -84,7 +84,7 @@ std::vector<render::TextCommand> TextCommand_vector_from_array(lox::Array* scrip
 		}
 		else
 		{
-			const auto str = obj->to_flat_string(lox::ToStringOptions::for_print());
+			const auto str = obj->to_flat_string(inter, nullptr, lox::ToStringOptions::for_print());
 			commands.emplace_back(str);
 		}
 	}
@@ -195,9 +195,9 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 			"windowbox",
 			[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
-				ah.complete();
+				const auto width = static_cast<float>(ah.require_float("width"));
+				const auto height = static_cast<float>(ah.require_float("height"));
+				if(ah.complete()) { return lox::make_nil(); }
 
 				LOX_ERROR(width > 0.0f, "width must be positive");
 				LOX_ERROR(height > 0.0f, "height must be positive");
@@ -213,10 +213,10 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 			"look_at",
 			[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto focusx = static_cast<float>(ah.require_float());
-				auto focusy = static_cast<float>(ah.require_float());
-				auto level = ah.require_native<ScriptLevel>();
-				ah.complete();
+				auto focusx = static_cast<float>(ah.require_float("focus_x"));
+				auto focusy = static_cast<float>(ah.require_float("focus_y"));
+				auto level = ah.require_native<ScriptLevel>("level");
+				if(ah.complete()) { return lox::make_nil(); }
 
 				LOX_ERROR(r.data, "must be called inside State.render()");
 
@@ -228,8 +228,8 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 			"clear",
 			[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto color = ah.require_native<Rgb>();
-				ah.complete();
+				auto color = ah.require_native<Rgb>("clear_color");
+				if(ah.complete()) { return lox::make_nil(); }
 				if (color == nullptr)
 				{
 					return nullptr;
@@ -258,13 +258,13 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 			"rect",
 			[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
+				auto color = ah.require_native<Rgb>("color");
+				const auto x = static_cast<float>(ah.require_float("x"));
+				const auto y = static_cast<float>(ah.require_float("y"));
+				const auto width = static_cast<float>(ah.require_float("width"));
+				const auto height = static_cast<float>(ah.require_float("height"));
 
-				ah.complete();
+				if(ah.complete()) { return lox::make_nil(); }
 				LOX_ASSERT(color);
 				LOX_ERROR(width > 0.0f, "width must be positive");
 				LOX_ERROR(height > 0.0f, "height must be positive");
@@ -290,17 +290,17 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 		)
 		.add_function(
 			"text",
-			[](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			[lox](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto font = ah.require_native<ScriptFont>();
-				const auto height = static_cast<float>(ah.require_float());
+				auto font = ah.require_native<ScriptFont>("font");
+				const auto height = static_cast<float>(ah.require_float("height"));
 				// auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
+				const auto x = static_cast<float>(ah.require_float("x"));
+				const auto y = static_cast<float>(ah.require_float("y"));
 				//const auto text = ah.require_string();
-				const auto script_commands = ah.require_array();
+				const auto script_commands = ah.require_array("commands");
 
-				ah.complete();
+				if(ah.complete()) { return lox::make_nil(); }
 				LOX_ASSERT(font);
 
 				auto data = r.data;
@@ -312,7 +312,7 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 					render::RenderLayer2& layer = *data->layer;
 
 					const auto commands
-						= script::TextCommand_vector_from_array(script_commands.get());
+						= script::TextCommand_vector_from_array(lox->get_interpreter(), script_commands.get());
 					font->font->print(layer.batch, height, x, y, commands);
 				}
 
@@ -323,13 +323,13 @@ void bind_render_command(lox::Lox* lox, AnimationsArray* animations)
 			"sprite",
 			[animations](RenderArg& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto texture = ah.require_native<ScriptSprite>();
+				auto texture = ah.require_native<ScriptSprite>("sprite");
 				// auto color = ah.require_native<Rgb>();
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				const auto flip_x = ah.require_bool();
-				/* const auto flip_y =*/ah.require_bool();
-				ah.complete();
+				const auto x = static_cast<float>(ah.require_float("x"));
+				const auto y = static_cast<float>(ah.require_float("y"));
+				const auto flip_x = ah.require_bool("flip_x");
+				/* const auto flip_y =*/ah.require_bool("flip_y");
+				if(ah.complete()) { return lox::make_nil(); }
 
 				LOX_ASSERT(texture);
 
@@ -360,9 +360,9 @@ void bind_sprite(lox::Lox* lox)
 			"set_size",
 			[](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				const auto width = static_cast<float>(ah.require_float());
-				const auto height = static_cast<float>(ah.require_float());
-				ah.complete();
+				const auto width = static_cast<float>(ah.require_float("width"));
+				const auto height = static_cast<float>(ah.require_float("height"));
+				if(ah.complete()) { return lox::make_nil(); }
 				for (auto& s: t.sprites)
 				{
 					s.screen = Rectf{width, height}.set_bottom_left(s.screen.left, s.screen.bottom);
@@ -374,9 +374,9 @@ void bind_sprite(lox::Lox* lox)
 			"align",
 			[](ScriptSprite& t, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				const auto x = static_cast<float>(ah.require_float());
-				const auto y = static_cast<float>(ah.require_float());
-				ah.complete();
+				const auto x = static_cast<float>(ah.require_float("x"));
+				const auto y = static_cast<float>(ah.require_float("y"));
+				if(ah.complete()) { return lox::make_nil(); }
 				for (auto& s: t.sprites)
 				{
 					s.screen = s.screen.set_bottom_left(
@@ -396,9 +396,9 @@ void bind_fun_load_font(lox::Lox* lox, FontCache* loaded_fonts)
 		"load_font",
 		[lox, loaded_fonts](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			const auto path = ah.require_string();
-			const auto size = ah.require_int();
-			ah.complete();
+			const auto path = ah.require_string("path");
+			const auto size = ah.require_int("size");
+			if(ah.complete()) { return lox::make_nil(); }
 			ScriptFont r;
 			r.setup(path, static_cast<float>(size));
 			loaded_fonts->emplace_back(r.font);
@@ -416,8 +416,8 @@ void bind_fun_load_image(lox::Lox* lox, TextureCache* texture_cache)
 		[lox,
 		 texture_cache](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			const auto path = ah.require_string();
-			ah.complete();
+			const auto path = ah.require_string("path");
+			if(ah.complete()) { return lox::make_nil(); }
 			ScriptSprite r;
 			Sprite s;
 			s.texture = texture_cache->get(path);
@@ -439,12 +439,12 @@ void bind_fun_load_sprite(lox::Lox* lox, TextureCache* texture_cache)
 		[lox,
 		 texture_cache](lox::Callable*, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			const auto path = ah.require_string();
-			const auto tiles_per_x = static_cast<int>(ah.require_int());
-			const auto tiles_per_y = static_cast<int>(ah.require_int());
-			const auto anim_speed = static_cast<float>(ah.require_float());
-			auto tiles_array = script::to_vec2i_array(ah.require_array());
-			ah.complete();
+			const auto path = ah.require_string("path");
+			const auto tiles_per_x = static_cast<int>(ah.require_int("tiles_per_x"));
+			const auto tiles_per_y = static_cast<int>(ah.require_int("tiles_per_y"));
+			const auto anim_speed = static_cast<float>(ah.require_float("anim_speed"));
+			auto tiles_array = script::to_vec2i_array(ah.require_array("tiles_array"));
+			if(ah.complete()) { return lox::make_nil(); }
 
 			auto r = script::load_sprite(
 				path, *texture_cache, tiles_per_x, tiles_per_y, anim_speed, tiles_array
@@ -484,8 +484,8 @@ void bind_fun_sync_sprite_animations(lox::Lox* lox)
 				}
 				return dst;
 			};
-			auto sprite_array = to_sprite_array(ah.require_array());
-			ah.complete();
+			auto sprite_array = to_sprite_array(ah.require_array("sprite_array"));
+			if(ah.complete()) { return lox::make_nil(); }
 
 			std::shared_ptr<SpriteAnimation> main_animation;
 			for (auto& sp: sprite_array)

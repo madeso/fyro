@@ -230,7 +230,7 @@ void HapticsEngine::on_imgui()
 {
 	for (std::size_t index = 0; index < effects.size(); index += 1)
 	{
-		const auto text = "{}"_format(effects[index].life);
+		const auto text = fmt::format("{}", effects[index].life);
 		ImGui::TextUnformatted(text.c_str());
 	}
 }

@@ -19,7 +19,7 @@ void bind_fun_get_input(lox::Lox* lox, Input* input)
 		"get_input",
 		[lox, input](lox::Callable*, lox::ArgumentHelper& arguments)
 		{
-			arguments.complete();
+			if(arguments.complete()) { return lox::make_nil(); }
 			auto frame = input->capture_player();
 			return lox->make_native<ScriptPlayer>(ScriptPlayer{frame});
 		}
@@ -41,9 +41,9 @@ void bind_player(lox::Lox* lox)
 			"run_haptics",
 			[](ScriptPlayer& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				float force = static_cast<float>(ah.require_float());
-				float life = static_cast<float>(ah.require_float());
-				ah.complete();
+				float force = static_cast<float>(ah.require_float("force"));
+				float life = static_cast<float>(ah.require_float("life"));
+				if(ah.complete()) { return lox::make_nil(); }
 				if (r.player == nullptr)
 				{
 					lox::raise_error("Player not created from input!");

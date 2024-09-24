@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 template<typename TSource, typename TData>
 struct Cache
 {

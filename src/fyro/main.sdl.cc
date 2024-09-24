@@ -82,10 +82,10 @@ void setup_open_gl(
 	opengl_setup(states);
 	opengl_set2d(states);
 
-	const auto* renderer = glGetString(GL_RENDERER);  // get renderer string
-	const auto* version = glGetString(GL_VERSION);	// version as a string
-	LOG_INFO("Renderer: {}", renderer);
-	LOG_INFO("Version: {}", version);
+	// const std::string renderer = static_cast<const char*>(glGetString(GL_RENDERER));  // get renderer string
+	// const std::string version = static_cast<const char*>(glGetString(GL_VERSION));	// version as a string
+	// LOG_INFO("Renderer: {}", renderer);
+	// LOG_INFO("Version: {}", version);
 
 	if (! imgui)
 	{

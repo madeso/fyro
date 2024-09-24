@@ -33,7 +33,7 @@ struct ScriptState : State
 	{
 		if (on_update)
 		{
-			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
+			on_update->call(lox->get_interpreter(), {{lox::make_number_float(static_cast<double>(dt))}});
 		}
 	}
 
@@ -43,7 +43,7 @@ struct ScriptState : State
 		{
 			auto ra = std::make_shared<RenderData>(rc);
 			auto render = lox->make_native<RenderArg>(RenderArg{ra});
-			on_render->call({{render}});
+			on_render->call(lox->get_interpreter(), {{render}});
 			// todo(Gustav): clean up render object here so calling functions on it can crash nicely instead of going down in assert/crash hell
 		}
 	}
@@ -92,8 +92,8 @@ void bind_random(lox::Lox* lox)
 		"next_int",
 		[](ScriptRandom& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 		{
-			const auto max_value = ah.require_int();
-			ah.complete();
+			const auto max_value = ah.require_int("max_value");
+			if(ah.complete()) { return lox::make_nil(); }
 			const auto value = r.next_int(max_value);
 			return lox::make_number_int(value);
 		}
@@ -107,9 +107,9 @@ void bind_ivec2(lox::Lox* lox)
 		"vec2i",
 		[](lox::ArgumentHelper& ah) -> glm::ivec2
 		{
-			const auto x = ah.require_int();
-			const auto y = ah.require_int();
-			ah.complete();
+			const auto x = ah.require_int("x");
+			const auto y = ah.require_int("y");
+			if(ah.complete()) { return glm::ivec2(0, 0); }
 			return glm::ivec2{x, y};
 		}
 	);
@@ -123,8 +123,8 @@ void bind_fun_set_state(lox::Lox* lox, std::unique_ptr<State>* next_state)
 		"set_state",
 		[lox, next_state](lox::Callable*, lox::ArgumentHelper& arguments)
 		{
-			auto instance = arguments.require_instance();
-			arguments.complete();
+			auto instance = arguments.require_instance("next_state");
+			if(arguments.complete()) { return lox::make_nil(); }
 			*next_state = std::make_unique<ScriptState>(instance, lox);
 			return lox::make_nil();
 		}

@@ -81,17 +81,17 @@ struct ScriptActor
 		on_get_squished = instance->get_bound_method_or_null("get_squished");
 	}
 
-	void update(float dt)
+	void update(lox::Interpreter* inter, float dt)
 	{
 		flicker.update(dt);
 
 		if (on_update)
 		{
-			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
+			on_update->call(inter, {{lox::make_number_float(static_cast<double>(dt))}});
 		}
 	}
 
-	void render(RenderData* data, std::shared_ptr<lox::Object> rc)
+	void render(lox::Interpreter* inter, RenderData* data, std::shared_ptr<lox::Object> rc)
 	{
 		const auto visible = data->visible;
 
@@ -103,7 +103,7 @@ struct ScriptActor
 
 		if (on_render)
 		{
-			on_render->call({{rc}});
+			on_render->call(inter, {{rc}});
 		}
 
 		data->visible = visible;
@@ -115,11 +115,11 @@ struct ScriptActor
 		return false;
 	}
 
-	void get_squished()
+	void get_squished(lox::Interpreter* inter)
 	{
 		if (on_get_squished)
 		{
-			on_get_squished->call({{}});
+			on_get_squished->call(inter, {{}});
 		}
 	}
 };
@@ -138,19 +138,19 @@ struct ScriptSolid
 		on_render = instance->get_bound_method_or_null("render");
 	}
 
-	void update(float dt)
+	void update(lox::Interpreter* inter, float dt)
 	{
 		if (on_update)
 		{
-			on_update->call({{lox::make_number_float(static_cast<double>(dt))}});
+			on_update->call(inter, {{lox::make_number_float(static_cast<double>(dt))}});
 		}
 	}
 
-	void render(std::shared_ptr<lox::Object> rc)
+	void render(lox::Interpreter* inter, std::shared_ptr<lox::Object> rc)
 	{
 		if (on_render)
 		{
-			on_render->call({{rc}});
+			on_render->call(inter, {{rc}});
 		}
 	}
 };
@@ -159,7 +159,10 @@ struct ScriptSolid
 
 struct ScriptActorImpl : fyro::Actor
 {
+	lox::Interpreter* inter;
 	std::shared_ptr<ScriptActor> dispatcher;
+
+	explicit ScriptActorImpl(lox::Interpreter* interpreter) : inter(interpreter) {}
 
 	bool is_riding_solid(fyro::Solid* solid) override
 	{
@@ -177,37 +180,40 @@ struct ScriptActorImpl : fyro::Actor
 	{
 		if (dispatcher)
 		{
-			return dispatcher->get_squished();
+			return dispatcher->get_squished(inter);
 		}
 	}
 
 	void update(float dt) override
 	{
 		assert(dispatcher);
-		dispatcher->update(dt);
+		dispatcher->update(inter, dt);
 	}
 
 	void render(RenderData* data, std::shared_ptr<lox::Object> rc) override
 	{
 		assert(dispatcher);
-		dispatcher->render(data, rc);
+		dispatcher->render(inter, data, rc);
 	}
 };
 
 struct ScriptSolidImpl : fyro::Solid
 {
+	lox::Interpreter* inter;
 	std::shared_ptr<ScriptSolid> dispatcher;
+
+	explicit ScriptSolidImpl(lox::Interpreter* interpreter) : inter(interpreter) {}
 
 	void update(float dt) override
 	{
 		assert(dispatcher);
-		dispatcher->update(dt);
+		dispatcher->update(inter, dt);
 	}
 
 	void render(RenderData*, std::shared_ptr<lox::Object> rc) override
 	{
 		assert(dispatcher);
-		dispatcher->render(rc);
+		dispatcher->render(inter, rc);
 	}
 };
 
@@ -215,8 +221,8 @@ struct ScriptSolidImpl : fyro::Solid
 
 struct ScriptActorBase
 {
-	ScriptActorBase()
-		: impl(std::make_shared<ScriptActorImpl>())
+	explicit ScriptActorBase(lox::Interpreter* inter)
+		: impl(std::make_shared<ScriptActorImpl>(inter))
 	{
 	}
 
@@ -225,8 +231,8 @@ struct ScriptActorBase
 
 struct ScriptSolidBase
 {
-	ScriptSolidBase()
-		: impl(std::make_shared<ScriptSolidImpl>())
+	explicit ScriptSolidBase(lox::Interpreter* inter)
+		: impl(std::make_shared<ScriptSolidImpl>(inter))
 	{
 	}
 
@@ -249,7 +255,7 @@ ScriptLevel::ScriptLevel()
 {
 }
 
-void ScriptLevel::load_tmx(const std::string& path)
+void ScriptLevel::load_tmx(lox::Lox* lox, const std::string& path)
 {
 	auto source = read_file_to_string(path);
 	tmx::Map map;
@@ -323,7 +329,7 @@ void ScriptLevel::load_tmx(const std::string& path)
 				// LOG_INFO("Spawning {0} at {1} {2}", tileset_name, fpx, fpy);
 				const auto px = lox::make_number_int(fpx);
 				const auto py = lox::make_number_int(map_height - fpy);
-				from_tileset_found->second->call({{px, py}});
+				from_tileset_found->second->call(lox->get_interpreter(), {{px, py}});
 			}
 			else
 			{
@@ -377,13 +383,17 @@ namespace bind
 void bind_phys_actor(lox::Lox* lox)
 {
 	auto fyro = lox->in_package("fyro");
-	fyro->define_native_class<ScriptActorBase>("Actor")
+	fyro->define_native_class<ScriptActorBase>("Actor", [lox](lox::ArgumentHelper& ah) -> ScriptActorBase
+		{
+			if(ah.complete()) return ScriptActorBase{nullptr};
+			return ScriptActorBase{lox->get_interpreter()};
+		})
 		.add_function(
 			"move_x",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto dist = static_cast<float>(ah.require_float());
-				ah.complete();
+				auto dist = static_cast<float>(ah.require_float("dx"));
+				if(ah.complete()) { return lox::make_nil(); }
 				auto r = x.impl->move_x(dist, fyro::no_collision_reaction);
 				return lox::make_bool(r);
 			}
@@ -392,8 +402,8 @@ void bind_phys_actor(lox::Lox* lox)
 			"move_y",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto dist = static_cast<float>(ah.require_float());
-				ah.complete();
+				auto dist = static_cast<float>(ah.require_float("dy"));
+				if(ah.complete()) { return lox::make_nil(); }
 				auto r = x.impl->move_y(dist, fyro::no_collision_reaction);
 				return lox::make_bool(r);
 			}
@@ -402,10 +412,10 @@ void bind_phys_actor(lox::Lox* lox)
 			"flicker",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				const auto duration = static_cast<float>(ah.require_float());
+				const auto duration = static_cast<float>(ah.require_float("duration"));
 				const auto interval
-					= static_cast<float>(ah.require_float());  // todo(Gustav): expand with optional
-				ah.complete();
+					= static_cast<float>(ah.require_float("interval"));  // todo(Gustav): expand with optional
+				if(ah.complete()) { return lox::make_nil(); }
 				LOX_ERROR(duration > 0, "duration must be larger than 0");
 				LOX_ERROR(interval > 0, "interval must be larger than 0");
 				x.impl->dispatcher->flicker.start_flicker(duration, interval);
@@ -432,9 +442,9 @@ void bind_phys_actor(lox::Lox* lox)
 			"set_size",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto width = to_int(ah.require_int());
-				auto height = to_int(ah.require_int());
-				ah.complete();
+				auto width = to_int(ah.require_int("width"));
+				auto height = to_int(ah.require_int("height"));
+				if(ah.complete()) { return lox::make_nil(); }
 				x.impl->size = Recti{width, height};
 				return lox::make_nil();
 			}
@@ -443,11 +453,11 @@ void bind_phys_actor(lox::Lox* lox)
 			"set_lrud",
 			[](ScriptActorBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto left = to_int(ah.require_int());
-				auto right = to_int(ah.require_int());
-				auto up = to_int(ah.require_int());
-				auto down = to_int(ah.require_int());
-				ah.complete();
+				auto left = to_int(ah.require_int("left"));
+				auto right = to_int(ah.require_int("right"));
+				auto up = to_int(ah.require_int("up"));
+				auto down = to_int(ah.require_int("down"));
+				if(ah.complete()) { return lox::make_nil(); }
 				x.impl->size = Recti{left, down, right, up};
 				return lox::make_nil();
 			}
@@ -457,14 +467,18 @@ void bind_phys_actor(lox::Lox* lox)
 void bind_phys_solid(lox::Lox* lox)
 {
 	auto fyro = lox->in_package("fyro");
-	fyro->define_native_class<ScriptSolidBase>("Solid")
+	fyro->define_native_class<ScriptSolidBase>("Solid", [lox](lox::ArgumentHelper& ah) -> ScriptSolidBase
+		{
+			if(ah.complete()) return ScriptSolidBase{nullptr};
+			return ScriptSolidBase{lox->get_interpreter()};
+		})
 		.add_function(
 			"move",
 			[](ScriptSolidBase& s, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto dx = static_cast<float>(ah.require_float());
-				auto dy = static_cast<float>(ah.require_float());
-				ah.complete();
+				auto dx = static_cast<float>(ah.require_float("dx"));
+				auto dy = static_cast<float>(ah.require_float("dy"));
+				if(ah.complete()) { return lox::make_nil(); }
 				s.impl->Move(dx, dy);
 				return lox::make_nil();
 			}
@@ -489,9 +503,9 @@ void bind_phys_solid(lox::Lox* lox)
 			"set_size",
 			[](ScriptSolidBase& x, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto width = to_int(ah.require_int());
-				auto height = to_int(ah.require_int());
-				ah.complete();
+				auto width = to_int(ah.require_int("width"));
+				auto height = to_int(ah.require_int("height"));
+				if(ah.complete()) { return lox::make_nil(); }
 				x.impl->size = Recti{width, height};
 				return lox::make_nil();
 			}
@@ -506,29 +520,34 @@ void bind_phys_level(lox::Lox* lox)
 			"add",
 			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto inst = ah.require_instance();
-				ah.complete();
+				auto inst = ah.require_instance("to_add");
+				if(ah.complete()) { return lox::make_nil(); }
 				r.add_actor(inst);
 				return lox::make_nil();
 			}
 		)
 		.add_function(
 			"load_tmx",
-			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			[lox](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto path = ah.require_string();
-				ah.complete();
-				r.load_tmx(path);
+				auto path = ah.require_string("path");
+				if(ah.complete()) { return lox::make_nil(); }
+				r.load_tmx(lox, path);
 				return lox::make_nil();
 			}
 		)
 		.add_function(
 			"add_loader_from_tileset",
-			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
+			[lox](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				const auto name = ah.require_string();
-				const auto callback = ah.require_callable();
-				ah.complete();
+				const auto name = ah.require_string("tileset_name");
+				const auto callback = ah.require_callable("on_add");
+				if(ah.complete()) { return lox::make_nil(); }
+				LOG_INFO(
+					"Registring a callback {0} that takes {1}",
+					name,
+					callback->get_arg_info(lox->get_interpreter(), callback.get()).arguments
+				);
 				r.data->from_tileset[name] = callback;
 				return lox::make_nil();
 			}
@@ -537,8 +556,8 @@ void bind_phys_level(lox::Lox* lox)
 			"add_solid",
 			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto inst = ah.require_instance();
-				ah.complete();
+				auto inst = ah.require_instance("solid");
+				if(ah.complete()) { return lox::make_nil(); }
 				r.add_solid(inst);
 				return lox::make_nil();
 			}
@@ -547,8 +566,8 @@ void bind_phys_level(lox::Lox* lox)
 			"update",
 			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto dt = static_cast<float>(ah.require_float());
-				ah.complete();
+				auto dt = static_cast<float>(ah.require_float("dt"));
+				if(ah.complete()) { return lox::make_nil(); }
 				r.data->level.update(dt);
 				return lox::make_nil();
 			}
@@ -557,8 +576,8 @@ void bind_phys_level(lox::Lox* lox)
 			"render",
 			[](ScriptLevel& r, lox::ArgumentHelper& ah) -> std::shared_ptr<lox::Object>
 			{
-				auto rend = ah.require_native<RenderArg>();
-				ah.complete();
+				auto rend = ah.require_native<RenderArg>("rend");
+				if(ah.complete()) { return lox::make_nil(); }
 				script::render_level(r.data.get(), rend);
 				return lox::make_nil();
 			}

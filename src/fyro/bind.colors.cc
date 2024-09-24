@@ -50,10 +50,10 @@ void bind_rgb(lox::Lox* lox)
 		"Rgb",
 		[](lox::ArgumentHelper& ah) -> Rgb
 		{
-			const auto r = static_cast<float>(ah.require_float());
-			const auto g = static_cast<float>(ah.require_float());
-			const auto b = static_cast<float>(ah.require_float());
-			ah.complete();
+			const auto r = static_cast<float>(ah.require_float("red"));
+			const auto g = static_cast<float>(ah.require_float("green"));
+			const auto b = static_cast<float>(ah.require_float("blue"));
+			if(ah.complete()) return Rgb{0, 0, 0};
 			return Rgb{r, g, b};
 		}
 	);
