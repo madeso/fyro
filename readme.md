@@ -50,7 +50,6 @@ on_collision(player: Player, enemy: Enemy) => {
 -   replace OpenGL rendering with the SDL 2d renderer. This would probably make the engine easier to port but might remove shader support. We might want 2d normal maps, basic water effects or some 2d lightning later...
 -   add sound and music
 -   name input so we can assure player1 is the same in meny as in game
--   change input? to support mouse only games (cpp samples) and dual-stick shooters with "mouselook"
 -   add hot reload
 -   add data "screenshot" dump of the last x seconds, with debugging, logging, log diff and replayability
 -   get debugging ideas from
@@ -66,3 +65,14 @@ on_collision(player: Player, enemy: Enemy) => {
 -   port to webgl, android, raspberry pi
 -   port gamejam games for more samples
 -   port "16 games in c++ sfml" for more samples?
+-   change input? to support mouse only games (cpp samples) and dual-stick shooters with "mouselook"
+
+### Mouse vs gamepad
+
+* Idea: add a possible input modes and let the game code hande input directly depending on the input
+```cpp
+// will error if not enabled...
+const input = lox.get_gamepad();
+const mouse = lox.get_mouse();
+```
+
