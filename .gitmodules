@@ -25,3 +25,6 @@
 [submodule "external/tmxlite"]
 	path = external/tmxlite
 	url = git@github.com:fallahn/tmxlite.git
+[submodule "external/dependencies"]
+	path = external/dependencies
+	url = git@github.com:madeso/dependencies.git
